@@ -3,6 +3,7 @@ from enum import Enum
 from collections import namedtuple
 from absl import logging
 # Need dist_utils from alf.utils
+from .util
 
 
 ActionType = Enum("ActionType", ("Discrete", "Continuous", "Mixed"))

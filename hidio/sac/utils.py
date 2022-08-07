@@ -4,6 +4,7 @@ import gin
 import numpy as np
 from collections import namedtuple, OrderedDict
 import torch.distributions as td
+from .TensorSpec import TensorSpec
 
 
 
