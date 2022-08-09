@@ -19,7 +19,7 @@ class CriticNetwork(nn.Module):
                  name="critic_network", 
                  fully_connected_dims_1=256, 
                  fully_connected_dims_2=256, 
-                 checkpoint_dir="./network_checkpoints"):
+                 checkpoint_dir="./network_checkpoints/"):
         
         super(CriticNetwork, self).__init__()
         
@@ -83,7 +83,7 @@ class ValueNetwork(nn.Module):
                  name="value_network", 
                  fully_connected_dims_1=256, 
                  fully_connected_dims_2=256, 
-                 checkpoint_dir="./network_checkpoints"):
+                 checkpoint_dir="./network_checkpoints/"):
         
         super(ValueNetwork, self).__init__()
         
@@ -153,7 +153,7 @@ class ActorNetwork(nn.Module):
                  name="actor_network",
                  fully_connected_dims_1=256,
                  fully_connected_dims_2=256,
-                 checkpoint_dir="./network_checkpoints"):
+                 checkpoint_dir="./network_checkpoints/"):
         
         super(ActorNetwork, self).__init__()
         
