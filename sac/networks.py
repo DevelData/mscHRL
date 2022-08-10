@@ -47,7 +47,7 @@ class CriticNetwork(nn.Module):
         
         
     def forward(self, state, action):
-        action_value = F.relu(self.fc1(T.concat([state, action]), dim=1))
+        action_value = F.relu(self.fc1(T.cat([state, action]), dim=1))
         action_value = F.relu(self.fc2(action_value))
         q = self.q_val(action_value)
 
@@ -96,7 +96,7 @@ class ValueNetwork(nn.Module):
         
         # NN architecture
         # Monitor the unpacking
-        self.fc1 = nn.Linear(in_features=*self.input_dims, 
+        self.fc1 = nn.Linear(in_features=self.input_dims[0], 
                              out_features=self.fully_connected_dims_1)
         self.fc2 = nn.Linear(in_features=self.fully_connected_dims_1, 
                              out_features=self.fully_connected_dims_2)
@@ -159,6 +159,7 @@ class ActorNetwork(nn.Module):
         
         self.input_dims = input_dims
         self.name = name
+        self.max_action = max_action
         self.num_actions = num_actions
         self.fully_connected_dims_1 = fully_connected_dims_1
         self.fully_connected_dims_2 = fully_connected_dims_2
@@ -169,7 +170,7 @@ class ActorNetwork(nn.Module):
         
         # NN architecture
         # Monitor the unpacking
-        self.fc1 = nn.Linear(in_features=*input_dims, 
+        self.fc1 = nn.Linear(in_features=self.input_dims[0], 
                              out_features=self.fully_connected_dims_1)
         self.fc2 = nn.Linear(in_features=self.fully_connected_dims_1, 
                              out_features=self.fully_connected_dims_2)
@@ -204,6 +205,9 @@ class ActorNetwork(nn.Module):
     def sample_normal(self, state, reparameterize=True):
         mu, sigma = self.forward(state)
         probabilities = Normal(mu, sigma)
+        #print("mu:", mu)
+        #print("sigma:", sigma)
+        #print("probabilities:", probabilities)
         
         if reparameterize:
             # Sample from distribution with noise
@@ -212,7 +216,7 @@ class ActorNetwork(nn.Module):
             # Sample from distribution without noise
             action_samples = probabilities.sample()
             
-        action = T.tanh(action_samples) * T.tensor(max_action).to(self.device)
+        action = T.tanh(action_samples) * T.tensor(self.max_action).to(self.device)
         log_probability = probabilities.log_prob(action_samples)
         log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
         log_probability = log_probability.sum(1, keepdim=True)

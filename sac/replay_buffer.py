@@ -7,8 +7,7 @@ class ReplayBuffer(object):
     def __init__(self, max_memory_size, input_dims, num_actions):
         self.max_memory_size = max_memory_size
         self.memory_counter = 0
-        self.state_memory = np.zeros(shape=(self.max_memory_size * input_dims), 
-                                     dtype=np.float32)
+        self.state_memory = np.zeros(shape=(self.max_memory_size, *input_dims), dtype=np.float32)
         self.next_state_memory = copy.deepcopy(self.state_memory)
         self.action_memory = np.zeros(shape=(self.max_memory_size, num_actions), 
                                       dtype=np.float32)
@@ -24,6 +23,10 @@ class ReplayBuffer(object):
         
         idx = self.memory_counter % self.max_memory_size
         self.state_memory[idx] = state
+        #print("Action memory:", self.action_memory)
+        #print("Action memory shape:", self.action_memory.shape)
+        #print("Action memory dtype:", self.action_memory.dtype)
+        #print("Action from replay_buffer store_transitions:", action)
         self.action_memory[idx] = action
         self.next_state_memory[idx] = next_state
         self.reward_memory[idx] = reward

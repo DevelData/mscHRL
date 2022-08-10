@@ -1,5 +1,5 @@
 import os
-import os
+import numpy as np
 import torch as T
 import torch.nn.functional as F
 from replay_buffer import ReplayBuffer
@@ -40,6 +40,7 @@ class Agent(object):
         
         self.actor_network = ActorNetwork(actor_lr=actor_lr, 
                                           input_dims=input_dims, 
+                                          num_actions=self.num_actions, 
                                           max_action=env.action_space.high, 
                                           name="actor_network")
         self.critic_network_1 = CriticNetwork(critic_lr=critic_lr, 
@@ -67,9 +68,10 @@ class Agent(object):
         
         # Using T.tensor instead of T.Tensor
         # T.Tensor([observation]) in tutorial
+        # np.array([observation])
         state = T.tensor([observation], dtype=T.float32).to(self.actor_network.device)
         # Why default to True
-        actions, _ = self.actor_network.sample_normal(state, reparametrize=False)
+        actions, _ = self.actor_network.sample_normal(state, reparameterize=False)
         
         return actions.cpu().detach().numpy()[0]
     
@@ -94,9 +96,9 @@ class Agent(object):
         value_network_state_dict = dict(value_network_parameters)
         
         for key in value_network_state_dict:
-            value_network_state_dict[key] = (tau * value_network_state_dict[name].clone())  + ((1-tau) * target_value_network_state_dict[name].clone())
+            value_network_state_dict[key] = (tau * value_network_state_dict[key].clone())  + ((1-tau) * target_value_network_state_dict[key].clone())
             
-        self.target_value_network.load_state_dict(value_state_dict)
+        self.target_value_network.load_state_dict(value_network_state_dict)
         
         return
     
@@ -136,7 +138,7 @@ class Agent(object):
         
         """
         
-        self.memory.memory_counter < self.batch_size:
+        if self.memory.memory_counter < self.batch_size:
             return
         
         state, action, next_state, reward, done = self.memory.sample_buffer(self.batch_size)
@@ -153,7 +155,7 @@ class Agent(object):
         target_value_network_value[done] = 0.0
         
         
-        actions, log_probability = self.actor_network.sample_normal(state, reparametrize=False)
+        actions, log_probability = self.actor_network.sample_normal(state, reparameterize=False)
         log_probability = log_probability.view(-1)
         q1_new_policy = self.critic_network_1.forward(state, actions)
         q2_new_policy = self.critic_network_2.forward(state, actions)
@@ -167,7 +169,7 @@ class Agent(object):
         
         # Repeats from a block of code above
         # Only difference is reparameterize is True
-        actions, log_probability = self.actor_network.sample_normal(state, reparametrize=True)
+        actions, log_probability = self.actor_network.sample_normal(state, reparameterize=True)
         log_probability = log_probability.view(-1)
         q1_new_policy = self.critic_network_1.forward(state, actions)
         q2_new_policy = self.critic_network_2.forward(state, actions)
