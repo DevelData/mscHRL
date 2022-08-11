@@ -157,8 +157,6 @@ class Agent(object):
         
         actions, log_probability = self.actor_network.sample_normal(state, reparameterize=False)
         log_probability = log_probability.view(-1)
-        print("Agent state shape:", state.shape)
-        print("Agent actions shape", actions.shape)
         q1_new_policy = self.critic_network_1.forward(state, actions)
         q2_new_policy = self.critic_network_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy).view(-1)
@@ -179,7 +177,7 @@ class Agent(object):
         
         actor_loss = T.mean(log_probability - critic_value)
         self.actor_network.optimizer.zero_grad()
-        self.actor_network.backward(retain_graph=True)
+        actor_loss.backward(retain_graph=True)
         self.actor_network.optimizer.step()
         
         self.critic_network_1.optimizer.zero_grad()
