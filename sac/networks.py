@@ -47,7 +47,8 @@ class CriticNetwork(nn.Module):
         
         
     def forward(self, state, action):
-        action_value = F.relu(self.fc1(T.cat([state, action]), dim=1))
+        
+        action_value = F.relu(self.fc1(T.cat([state, action], dim=1)))
         action_value = F.relu(self.fc2(action_value))
         q = self.q_val(action_value)
 
@@ -96,8 +97,8 @@ class ValueNetwork(nn.Module):
         
         # NN architecture
         # Monitor the unpacking
-        self.fc1 = nn.Linear(in_features=self.input_dims[0], 
-                             out_features=self.fully_connected_dims_1)
+        self.fc1 = nn.Linear(*self.input_dims, 
+                             self.fully_connected_dims_1)
         self.fc2 = nn.Linear(in_features=self.fully_connected_dims_1, 
                              out_features=self.fully_connected_dims_2)
         self.value = nn.Linear(in_features=self.fully_connected_dims_2, 
@@ -170,8 +171,7 @@ class ActorNetwork(nn.Module):
         
         # NN architecture
         # Monitor the unpacking
-        self.fc1 = nn.Linear(in_features=self.input_dims[0], 
-                             out_features=self.fully_connected_dims_1)
+        self.fc1 = nn.Linear(*self.input_dims, self.fully_connected_dims_1)
         self.fc2 = nn.Linear(in_features=self.fully_connected_dims_1, 
                              out_features=self.fully_connected_dims_2)
         self.mu = nn.Linear(in_features=self.fully_connected_dims_2, 
@@ -205,9 +205,6 @@ class ActorNetwork(nn.Module):
     def sample_normal(self, state, reparameterize=True):
         mu, sigma = self.forward(state)
         probabilities = Normal(mu, sigma)
-        #print("mu:", mu)
-        #print("sigma:", sigma)
-        #print("probabilities:", probabilities)
         
         if reparameterize:
             # Sample from distribution with noise

@@ -23,10 +23,6 @@ class ReplayBuffer(object):
         
         idx = self.memory_counter % self.max_memory_size
         self.state_memory[idx] = state
-        #print("Action memory:", self.action_memory)
-        #print("Action memory shape:", self.action_memory.shape)
-        #print("Action memory dtype:", self.action_memory.dtype)
-        #print("Action from replay_buffer store_transitions:", action)
         self.action_memory[idx] = action
         self.next_state_memory[idx] = next_state
         self.reward_memory[idx] = reward

@@ -33,16 +33,13 @@ if __name__ == "__main__":
             action = agent.choose_action(observation)
             next_observation, reward, done, info = env.step(action)
             score += reward
-            #print("Observation 2: ------------", observation)
-            #print("Action: ------------", action)
-            #print("Next observation: ------------", next_observation)
-            #print("Reward: ------------", reward)
-            #print("Done: ------------", done)
             agent.remember(observation, action, next_observation, reward, done)
             
             if not load_checkpoint:
                 agent.learn()
+            
             observation = next_observation
+        
         score_history.append(score)
         avg_score = np.mean(score_history[-100:])
         

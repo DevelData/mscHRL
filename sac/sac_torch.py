@@ -45,11 +45,11 @@ class Agent(object):
                                           name="actor_network")
         self.critic_network_1 = CriticNetwork(critic_lr=critic_lr, 
                                               input_dims=input_dims, 
-                                              num_actions=num_actions, 
+                                              num_actions=self.num_actions, 
                                               name="critic_network_1")
         self.critic_network_2 = CriticNetwork(critic_lr=critic_lr, 
                                               input_dims=input_dims, 
-                                              num_actions=num_actions, 
+                                              num_actions=self.num_actions, 
                                               name="critic_network_2")
         self.value_network = ValueNetwork(value_lr=value_lr, 
                                           input_dims=input_dims, 
@@ -157,6 +157,8 @@ class Agent(object):
         
         actions, log_probability = self.actor_network.sample_normal(state, reparameterize=False)
         log_probability = log_probability.view(-1)
+        print("Agent state shape:", state.shape)
+        print("Agent actions shape", actions.shape)
         q1_new_policy = self.critic_network_1.forward(state, actions)
         q2_new_policy = self.critic_network_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy).view(-1)
