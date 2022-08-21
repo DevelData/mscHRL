@@ -10,7 +10,7 @@ if __name__ == "__main__":
                   env=env, 
                   num_actions=env.action_space.shape[0])
     # 250 in original
-    n_games = 25
+    n_games = 250
     filename = "inverted_pendulum.png"
     figure_file = "./plots/" + filename
     
