@@ -165,11 +165,6 @@ class SchedulerNetwork(GeneralNetwork):
         
 
 
-
-
-
-
-
 class DiscriminatorNetwork(GeneralNetwork):
     """
     
@@ -183,7 +178,9 @@ class DiscriminatorNetwork(GeneralNetwork):
                  input_dims, 
                  fc1_size, 
                  fc2_size, 
-                 output_dims):
+                 output_dims, 
+                 normal_mu, 
+                 normal_std):
         #self, env_name, learning_rate, dimensions, normal_mu, normal_std, name, checkpoint_dir, fc1_size=64, fc2_size=64):
         
         super(DiscriminatorNetwork, self).__init__(self, 
@@ -195,3 +192,17 @@ class DiscriminatorNetwork(GeneralNetwork):
                                                    fc1_size, 
                                                    fc2_size, 
                                                    output_dims)
+        # Used for sampling - output distribution is assumed to be Gaussian
+        self.normal_mu = normal_mu
+        self.normal_std = normal_std
+        # skill_dims
+
+
+    def forward(self, worker_action_array, worker_next_states_array):
+        # Have to concatenate the inputs and output something that matches 
+        # the dimensions of the skill.
+        pass
+
+
+    def compute_loss(self, output, skill):
+        return F.mse_loss(output, skill).pow(2)
