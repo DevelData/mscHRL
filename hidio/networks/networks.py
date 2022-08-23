@@ -89,7 +89,8 @@ class SchedulerNetwork(GeneralNetwork):
                  option_interval, 
                  gamma, 
                  option_gamma, 
-                 max_action):
+                 max_action, 
+                 episode_length):
 
         super(SchedulerNetwork, self).__init__(env_name, 
                                                learning_rate, 
@@ -104,6 +105,7 @@ class SchedulerNetwork(GeneralNetwork):
         self.skill_dims = skill_dims # Not sure about using this yet
         self.option_gamma = option_gamma
         self.max_action = max_action
+        self.episode_length = episode_length
         # To prevent samples with zero standard deviation (non-differentiable)
         self.reparameterization_noise = 1e-6
 
@@ -162,6 +164,20 @@ class SchedulerNetwork(GeneralNetwork):
         #log_probability = log_probability.sum(1, keepdim=True)
 
         pass
+
+
+    def post_interval_reward(self, reward_array, option_interval_discounted=False):
+        """
+        Calculates the reward for the scheduler after the option interval (K).
+        """
+
+        if option_interval_discounted:
+            return (reward_array * self.option_interval_discounting).sum()
+        else:
+            return reward_array.sum()
+
+    
+
         
 
 
@@ -180,7 +196,9 @@ class DiscriminatorNetwork(GeneralNetwork):
                  fc2_size, 
                  output_dims, 
                  normal_mu, 
-                 normal_std):
+                 normal_std, 
+                 skill_dims,
+                 batch_size):
         #self, env_name, learning_rate, dimensions, normal_mu, normal_std, name, checkpoint_dir, fc1_size=64, fc2_size=64):
         
         super(DiscriminatorNetwork, self).__init__(self, 
@@ -195,14 +213,29 @@ class DiscriminatorNetwork(GeneralNetwork):
         # Used for sampling - output distribution is assumed to be Gaussian
         self.normal_mu = normal_mu
         self.normal_std = normal_std
-        # skill_dims
+        self.skill_dims = skill_dims
+        self.batch_size = batch_size
 
 
-    def forward(self, worker_action_array, worker_next_states_array):
+    def forward(self, input_array):
+        """
+        input_array can be a combination of actions, states or next states.
+        Make sure to preprocess the inputs before passing them through. Also,
+        modify input_dims before using this function.
+        """
         # Have to concatenate the inputs and output something that matches 
         # the dimensions of the skill.
-        pass
+
+        processed_input = F.relu(self.fc1(input_array))
+        processed_input = F.relu(self.fc2(processed_input))
+        predicted_skill = self.output(processed_input)
+
+        return predicted_skill
 
 
-    def compute_loss(self, output, skill):
-        return F.mse_loss(output, skill).pow(2)
+    def compute_loss(self, input_array, skill):
+
+        predicted_skill = self.forward(input_array=input_array)\
+                              .reshape(self.batch_size, self.skill_dims, -1)
+
+        return F.mse_loss(predicted_skill, skill).pow(2)
