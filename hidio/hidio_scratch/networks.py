@@ -156,14 +156,18 @@ class SchedulerNetwork(GeneralNetwork):
             action_samples = probabilities.sample()
 
         # Is the tanh necessary ??
+        # OpenAI Gym website is down
+        # Perhaps needed for symmetric action space - confirm if continuous 
+        # actions are symmetric
         actions = T.tanh(action_samples) * T.tensor(self.max_action).to(self.device)
+        actions = actions.reshape(self.skill_dims, -1)
 
         # This I do not understand at all - FIGURE THIS OUT!!!
         #log_probability = probabilities.log_prob(action_samples)
         #log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
         #log_probability = log_probability.sum(1, keepdim=True)
 
-        pass
+        return actions
 
 
     def post_interval_reward(self, reward_array, option_interval_discounted=False):
@@ -175,9 +179,6 @@ class SchedulerNetwork(GeneralNetwork):
             return (reward_array * self.option_interval_discounting).sum()
         else:
             return reward_array.sum()
-
-    
-
         
 
 
