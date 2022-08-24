@@ -127,6 +127,7 @@ class SchedulerNetwork(GeneralNetwork):
         
         # Trying this instead of separate layers 
         mu_sigma = self.output(processed_state)
+        print("Shape of mu_sigma:", mu_sigma.shape)
         mu = mu_sigma[:, 0]
         sigma = mu_sigma[:, 1]
         #sigma = self.sigma(processed_state)
@@ -179,6 +180,9 @@ class SchedulerNetwork(GeneralNetwork):
             return (reward_array * self.option_interval_discounting).sum()
         else:
             return reward_array.sum()
+        
+    
+    def objective_rewards(self, )
         
 
 
@@ -240,3 +244,73 @@ class DiscriminatorNetwork(GeneralNetwork):
                               .reshape(self.batch_size, self.skill_dims, -1)
 
         return F.mse_loss(predicted_skill, skill).pow(2)
+
+
+
+class ActorNetwork(GeneralNetwork):
+    """
+    Actor network for SAC. Used in the worker module.
+    """
+
+    def __init__(self, 
+                 env_name, 
+                 learning_rate, 
+                 name, 
+                 checkpoint_dir, 
+                 input_dims, 
+                 fc1_size, 
+                 fc2_size, 
+                 output_dims, 
+                 num_actions, 
+                 max_action):
+
+        super(ActorNetwork, self).__init__(env_name,
+                                           learning_rate,
+                                           name, 
+                                           checkpoint_dir, 
+                                           input_dims, 
+                                           fc1_size, 
+                                           fc2_size, 
+                                           output_dims)
+        self.num_actions = num_actions
+        self.max_action = max_action
+
+        # To prevent taking log of 0
+        self.reparameterization_noise = 1e-6
+
+        
+    def forward(self, state):
+        """
+        """
+
+        probability = F.relu(self.fc1(state))
+        probability = F.relu(self.fc2(probability))
+        mu_sigma = mu_sigma = self.output(probability)
+        print("Shape of mu_sigma:", mu_sigma.shape)
+        mu = mu_sigma[:, 0]
+        sigma = mu_sigma[:, 1]
+
+        sigma = T.clamp(sigma, min=self.reparameterization_noise, max=1)
+
+        return mu, sigma
+
+    def choose_action(self, state, reparameterize=True):
+        """
+        """
+
+        mu, sigma = self.forward(state)
+        probabilities = Normal(mu, sigma)
+        
+        if reparameterize:
+            # Sample from distribution with noise
+            action_samples = probabilities.rsample()
+        else:
+            # Sample from distribution without noise
+            action_samples = probabilities.sample()
+            
+        action = T.tanh(action_samples) * T.tensor(self.max_action).to(self.device)
+        log_probability = probabilities.log_prob(action_samples)
+        log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
+        log_probability = log_probability.sum(1, keepdim=True)
+        
+        return action, log_probability
