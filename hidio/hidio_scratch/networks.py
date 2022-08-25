@@ -287,8 +287,8 @@ class ActorNetwork(GeneralNetwork):
         probability = F.relu(self.fc2(probability))
         mu_sigma = mu_sigma = self.output(probability)
         print("Shape of mu_sigma:", mu_sigma.shape)
-        mu = mu_sigma[:, 0]
-        sigma = mu_sigma[:, 1]
+        mu = mu_sigma[:, 0].unsqueeze(dim=1)
+        sigma = mu_sigma[:, 1].unsqueeze(dim=1)
 
         sigma = T.clamp(sigma, min=self.reparameterization_noise, max=1)
 
@@ -314,3 +314,80 @@ class ActorNetwork(GeneralNetwork):
         log_probability = log_probability.sum(1, keepdim=True)
         
         return action, log_probability
+
+
+
+class ValueNetwork(GeneralNetwork):
+    """
+    
+    """
+
+    def __init__(self, 
+                 env_name, 
+                 learning_rate, 
+                 name, 
+                 checkpoint_dir, 
+                 input_dims, 
+                 fc1_size, 
+                 fc2_size, 
+                 output_dims):
+
+        super(ValueNetwork, self).__init__(env_name, 
+                                           learning_rate, 
+                                           name, 
+                                           checkpoint_dir, 
+                                           input_dims, 
+                                           fc1_size, 
+                                           fc2_size, 
+                                           output_dims)
+
+        
+    def forward(self, state):
+        """
+        """
+
+        state_value = F.relu(self.fc1(state))
+        state_value = F.relu(self.fc2(state))
+        value = self.output(state_value)
+
+        return value
+
+
+
+class CriticNetwork(GeneralNetwork):
+    """
+    
+    """
+
+    def __init__(self, 
+                 env_name, 
+                 learning_rate, 
+                 name, 
+                 checkpoint_dir, 
+                 input_dims, 
+                 fc1_size, 
+                 fc2_size, 
+                 output_dims, 
+                 num_actions):
+
+        super(CriticNetwork, self).__init__(env_name, 
+                                            learning_rate, 
+                                            name, 
+                                            checkpoint_dir, 
+                                            input_dims, 
+                                            fc1_size, 
+                                            fc2_size, 
+                                            output_dims)
+
+        self.num_actions = num_actions
+
+
+    def forward(self, state_action_array):
+        """
+        """
+
+        action_value = F.relu(self.fc1(state_action_array))
+        action_value = F.relu(self.fc2(action_value))
+        q_value = self.output(action_value)
+
+        return q_value

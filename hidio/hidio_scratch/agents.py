@@ -4,3 +4,11 @@ import torch as T
 import torch.nn.functional as F
 from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
 from networks import SchedulerNetwork, DiscriminatorNetwork
+
+
+class WorkerAgent(object):
+    pass
+
+
+class Agent(object):
+    pass
