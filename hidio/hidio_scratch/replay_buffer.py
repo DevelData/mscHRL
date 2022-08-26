@@ -29,7 +29,7 @@ class SchedulerBuffer(object):
         #np.zeros(shape=(self.memory_size, self.skill_dims, self.state_dims), dtype=np.float32)
         self.reward_memory = np.zeros(shape=self.memory_size, dtype=np.float32)
         self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims, self.num_actions), dtype=np.float32)
-        self.terminal_memory = np.zeros(shape=self.memory_size, dtype=np.bool8)
+        #self.terminal_memory = np.zeros(shape=self.memory_size, dtype=np.bool8)
     
     
     def store_transitions(self, state, skill, next_state, reward):
@@ -53,7 +53,7 @@ class SchedulerBuffer(object):
         return
     
 
-    def sample_buffer(self, batch_size, next_iter=False):
+    def sample_buffer(self, batch_size):
         """
 
         """
@@ -61,16 +61,13 @@ class SchedulerBuffer(object):
         max_current_memory = min(self.memory_counter, self.memory_size)
         batch = np.random.choice(max_current_memory, size=batch_size)
 
-        if next_iter:
-            batch = (batch + 1) % self.memory_size
-
         states_sample = self.state_memory[batch]
         skill_sample = self.skill_memory[batch]
         next_states_sample = self.next_state_memory[batch]
         #rewards_sample = self.reward_memory[batch]
         #terminal_sample = self.terminal_memory[batch]
 
-        return (states_sample, skill_sample, next_states_sample)
+        return (states_sample, skill_sample, next_states_sample, batch)
     
     
     

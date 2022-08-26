@@ -1,3 +1,4 @@
+from dis import dis
 import os
 import torch as T
 import torch.nn.functional as F
@@ -110,8 +111,9 @@ class SchedulerNetwork(GeneralNetwork):
         self.reparameterization_noise = 1e-6
 
         # Array for discounting in the loss function
-        self.option_interval_discounting = np.full(self.option_interval, self.option_gamma)
-        self.option_interval_discounting = np.power(self.option_interval_discounting, [i for i in range(self.option_interval)])
+        self.option_interval_discount = np.full(self.option_interval, self.option_gamma)
+        self.option_interval_discount = np.power(self.option_interval_discount, [i for i in range(self.option_interval)])
+        self.option_interval_discount = T.tensor(self.option_interval_discount).to(self.device)
 
         # Additional layer for calculation of standard deviation
         #self.sigma = nn.Linear(in_features=self.fc2_size, 
@@ -119,6 +121,9 @@ class SchedulerNetwork(GeneralNetwork):
 
 
     def forward(self, state):
+        """
+        
+        """
 
         # Don't forget to send the state to the Tensor device in other methods
         #state = T.tensor(state).to(self.device)
@@ -128,8 +133,8 @@ class SchedulerNetwork(GeneralNetwork):
         # Trying this instead of separate layers 
         mu_sigma = self.output(processed_state)
         print("Shape of mu_sigma:", mu_sigma.shape)
-        mu = mu_sigma[:, 0]
-        sigma = mu_sigma[:, 1]
+        mu = mu_sigma[:, 0].unsqueeze(dim=1)
+        sigma = mu_sigma[:, 1].unsqueeze(dim=1)
         #sigma = self.sigma(processed_state)
 
         # To clamp or not to clamp ??????????????
@@ -145,6 +150,7 @@ class SchedulerNetwork(GeneralNetwork):
         """
 
         mu, sigma = self.forward(state)
+        mu = mu.reshape()
         probabilities = Normal(mu, sigma)
 
         # Find out why it was in the original tutorial
@@ -156,7 +162,6 @@ class SchedulerNetwork(GeneralNetwork):
             # Sample from distribution without noise
             action_samples = probabilities.sample()
 
-        # Is the tanh necessary ??
         # OpenAI Gym website is down
         # Perhaps needed for symmetric action space - confirm if continuous 
         # actions are symmetric
@@ -164,26 +169,60 @@ class SchedulerNetwork(GeneralNetwork):
         actions = actions.reshape(self.skill_dims, -1)
 
         # This I do not understand at all - FIGURE THIS OUT!!!
-        #log_probability = probabilities.log_prob(action_samples)
-        #log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
-        #log_probability = log_probability.sum(1, keepdim=True)
+        # In the appendix - still some questions around the derivation.
+        log_probability = probabilities.log_prob(action_samples)
+        log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
+        log_probability = log_probability.sum(1, keepdim=True)
 
-        return actions
+        return actions, log_probability
 
 
-    def post_interval_reward(self, reward_array, option_interval_discounted=False):
+    def post_interval_reward(self, log_probs, reward_array, expected_value=True):
         """
         Calculates the reward for the scheduler after the option interval (K).
+        1. Find out the dimensions for log_prob_actions
+            Same as reward - log_prob is actually log likelihood.
+        
+        log_probs: from actor network of worker module
+            Size: option_interval x 1
+        reward_array: from environment
+            Size: option_interval x 1
         """
 
-        if option_interval_discounted:
-            return (reward_array * self.option_interval_discounting).sum()
+        reward_array = T.tensor(reward_array).to(self.device)
+        log_probs = T.tensor(log_probs).to(self.device)
+
+        if expected_value:
+            rewards = reward_array * self.option_interval_discount
+            final_reward = log_probs * rewards
+            return final_reward.mean()
+
         else:
             return reward_array.sum()
         
     
-    def objective_rewards(self, )
+    def objective_rewards(self, log_prob, reward_array, batch_idx, horizon_discount=False):
+        """
+        Computes the loss value for the Scheduler.
+        reward_array: from replay buffer of scheduler
+        log_prob: from output of sample_normal of scheduler
+        batch_idx: batch indices of the samples selected
+        """
+
+        discount_factors = np.full(batch_idx.shape, self.gamma)
+        discount_factors = np.power(discount_factors, batch_idx)
         
+        if horizon_discount:
+            rewards = reward_array * discount_factors
+            rewards = T.tensor(rewards).to(self.device)
+            
+        else:
+            rewards = T.tensor(reward_array).to(self.device)
+
+        final_reward = log_prob * rewards
+
+        return final_reward.mean()
+
 
 
 class DiscriminatorNetwork(GeneralNetwork):
@@ -239,11 +278,13 @@ class DiscriminatorNetwork(GeneralNetwork):
 
 
     def compute_loss(self, input_array, skill):
+        """
+        Check feature extractor table to know what to input in input_array.
+        """
 
-        predicted_skill = self.forward(input_array=input_array)\
-                              .reshape(self.batch_size, self.skill_dims, -1)
+        predicted_skill = self.forward(input_array=input_array)
 
-        return F.mse_loss(predicted_skill, skill).pow(2)
+        return F.mse_loss(predicted_skill, skill).pow(2).sum(1, keepdim=True)
 
 
 
@@ -286,7 +327,6 @@ class ActorNetwork(GeneralNetwork):
         probability = F.relu(self.fc1(state))
         probability = F.relu(self.fc2(probability))
         mu_sigma = mu_sigma = self.output(probability)
-        print("Shape of mu_sigma:", mu_sigma.shape)
         mu = mu_sigma[:, 0].unsqueeze(dim=1)
         sigma = mu_sigma[:, 1].unsqueeze(dim=1)
 
@@ -294,11 +334,12 @@ class ActorNetwork(GeneralNetwork):
 
         return mu, sigma
 
+
     def choose_action(self, state, reparameterize=True):
         """
         """
 
-        mu, sigma = self.forward(state)
+        mu, sigma = self.forward(state) 
         probabilities = Normal(mu, sigma)
         
         if reparameterize:
