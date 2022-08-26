@@ -145,11 +145,12 @@ class SchedulerNetwork(GeneralNetwork):
     
     def sample_normal(self, state, reparameterize=True):
         """
+        mu dims: batch_size x (skill_dims x num_actions)
+        sigma dims = batch_size x (skill_dims x num_actions)
         
         """
 
         mu, sigma = self.forward(state)
-        mu = mu.reshape()
         probabilities = Normal(mu, sigma)
 
         # Find out why it was in the original tutorial
