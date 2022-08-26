@@ -121,7 +121,7 @@ class SchedulerNetwork(GeneralNetwork):
 
     def forward(self, state):
         """
-        
+        mu_sigma dimensions are incorrect, even in SAC ActorNetwork
         """
 
         # Don't forget to send the state to the Tensor device in other methods
@@ -131,9 +131,8 @@ class SchedulerNetwork(GeneralNetwork):
         
         # Trying this instead of separate layers 
         mu_sigma = self.output(processed_state)
-        print("Shape of mu_sigma:", mu_sigma.shape)
-        mu = mu_sigma[:, 0].unsqueeze(dim=1)
-        sigma = mu_sigma[:, 1].unsqueeze(dim=1)
+        mu = mu_sigma[:, 0].unsqueeze(dim=1) # This is wrong
+        sigma = mu_sigma[:, 1].unsqueeze(dim=1) # This is wrong
         #sigma = self.sigma(processed_state)
 
         # To clamp or not to clamp ??????????????
@@ -325,9 +324,9 @@ class ActorNetwork(GeneralNetwork):
 
         probability = F.relu(self.fc1(state))
         probability = F.relu(self.fc2(probability))
-        mu_sigma = mu_sigma = self.output(probability)
-        mu = mu_sigma[:, 0].unsqueeze(dim=1)
-        sigma = mu_sigma[:, 1].unsqueeze(dim=1)
+        mu_sigma = self.output(probability)
+        mu = mu_sigma[:, 0].unsqueeze(dim=1) # This is wrong
+        sigma = mu_sigma[:, 1].unsqueeze(dim=1) # This is wrong
 
         sigma = T.clamp(sigma, min=self.reparameterization_noise, max=1)
 
