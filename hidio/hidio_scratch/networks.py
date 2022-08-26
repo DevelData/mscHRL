@@ -1,4 +1,3 @@
-from dis import dis
 import os
 import torch as T
 import torch.nn.functional as F
@@ -166,12 +165,11 @@ class SchedulerNetwork(GeneralNetwork):
         # Perhaps needed for symmetric action space - confirm if continuous 
         # actions are symmetric
         actions = T.tanh(action_samples) * T.tensor(self.max_action).to(self.device)
-        actions = actions.reshape(self.skill_dims, -1)
 
         # This I do not understand at all - FIGURE THIS OUT!!!
         # In the appendix - still some questions around the derivation.
         log_probability = probabilities.log_prob(action_samples)
-        log_probability = log_probability - T.log(1 - action.pow(2) + self.reparameterization_noise)
+        log_probability = log_probability - T.log(1 - actions.pow(2) + self.reparameterization_noise)
         log_probability = log_probability.sum(1, keepdim=True)
 
         return actions, log_probability
