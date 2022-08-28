@@ -24,11 +24,9 @@ class SchedulerBuffer(object):
         self.skill_dims = skill_dims
         
         self.state_memory = np.zeros(shape=(self.memory_size, self.state_dims), dtype=np.float32)
-        # Deciding to store only a single state for a particular option
         self.next_state_memory = copy.deepcopy(self.state_memory)
-        #np.zeros(shape=(self.memory_size, self.skill_dims, self.state_dims), dtype=np.float32)
         self.reward_memory = np.zeros(shape=self.memory_size, dtype=np.float32)
-        self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims, self.num_actions), dtype=np.float32)
+        self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims), dtype=np.float32)
         #self.terminal_memory = np.zeros(shape=self.memory_size, dtype=np.bool8)
     
     
