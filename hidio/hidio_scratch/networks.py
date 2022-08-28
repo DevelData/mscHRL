@@ -131,8 +131,8 @@ class SchedulerNetwork(GeneralNetwork):
         
         # Trying this instead of separate layers 
         mu_sigma = self.output(processed_state)
-        mu = mu_sigma[:, 0].unsqueeze(dim=1) # This is wrong
-        sigma = mu_sigma[:, 1].unsqueeze(dim=1) # This is wrong
+        mu = mu_sigma[:, :mu_sigma.shape[1]//2] # Could be source of error
+        sigma = mu_sigma[:, mu_sigma.shape[1]//2:] # Could be source of error
         #sigma = self.sigma(processed_state)
 
         # To clamp or not to clamp ??????????????
@@ -325,8 +325,8 @@ class ActorNetwork(GeneralNetwork):
         probability = F.relu(self.fc1(state))
         probability = F.relu(self.fc2(probability))
         mu_sigma = self.output(probability)
-        mu = mu_sigma[:, 0].unsqueeze(dim=1) # This is wrong
-        sigma = mu_sigma[:, 1].unsqueeze(dim=1) # This is wrong
+        mu = mu_sigma[:, :mu_sigma.shape[1]//2] # Could be source of error
+        sigma = mu_sigma[:, mu_sigma.shape[1]//2:] # Could be source of error
 
         sigma = T.clamp(sigma, min=self.reparameterization_noise, max=1)
 
