@@ -14,16 +14,27 @@ if __name__ == "__main__":
     filename = "inverted_pendulum.png"
     figure_file = "./plots/" + filename
     
+    #######################
+    env.reward_range = (0,1000)
+    ##########################
+    
     best_score = env.reward_range[0]
     score_history = []
-    load_checkpoint = True
+    load_checkpoint = False
     
     if load_checkpoint:
         agent.load_models()
         env.render(mode="human")
     
     for i in range(n_games):
-        observation = env.reset()
+        # Small workaround because gym is being funny
+        #############################
+        try:
+            observation = env.reset()
+        except (ValueError, AssertionError):
+            observation = env.reset()
+        ###############################
+            
         done = False
         score = 0
         

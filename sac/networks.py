@@ -175,9 +175,9 @@ class ActorNetwork(nn.Module):
         self.fc2 = nn.Linear(in_features=self.fully_connected_dims_1,
                              out_features=self.fully_connected_dims_2)
         self.mu = nn.Linear(in_features=self.fully_connected_dims_2,
-                            out_features=self.num_actions*2) # This is wrong
-        self.sigma = nn.Linear(in_features=self.fully_connected_dims_2,
-                               out_features=self.num_actions)
+                            out_features=self.num_actions*2)
+        #self.sigma = nn.Linear(in_features=self.fully_connected_dims_2,
+        #                       out_features=self.num_actions)
 
         # Optimizer and device settings
         self.optimizer = optim.Adam(self.parameters(), lr=actor_lr)
@@ -192,13 +192,10 @@ class ActorNetwork(nn.Module):
 
         probability = F.relu(self.fc1(state))
         probability = F.relu(self.fc2(probability))
-        #print("Shape of probability:", probability.shape)
         ################
         mu_sigma = self.mu(probability)
-        #print("Shape of mu_sigma:", mu_sigma.shape)
-        #print("mu_sigma:", mu_sigma)
-        mu = mu_sigma[:, :mu_sigma.shape[1//2]] #.unsqueeze(dim=1) # This is wrong
-        sigma = mu_sigma[:, mu_sigma.shape[1//2]:] #.unsqueeze(dim=1) # This is wrong
+        mu = mu_sigma[:, :mu_sigma.shape[1]//2]
+        sigma = mu_sigma[:, mu_sigma.shape[1]//2:]
         ###################
         #mu = self.mu(probability)
         #sigma = self.sigma(probability)
