@@ -259,7 +259,7 @@ class DiscriminatorNetwork(GeneralNetwork):
         self.batch_size = batch_size
 
 
-    def forward(self, input_array):
+    def forward(self, input_array, use_tanh=False):
         """
         input_array can be a combination of actions, states or next states.
         Make sure to preprocess the inputs before passing them through. Also,
@@ -271,6 +271,9 @@ class DiscriminatorNetwork(GeneralNetwork):
         processed_input = F.relu(self.fc1(input_array))
         processed_input = F.relu(self.fc2(processed_input))
         predicted_skill = self.output(processed_input)
+
+        if use_tanh:
+            predicted_skill = T.tanh(predicted_skill)
 
         return predicted_skill
 
