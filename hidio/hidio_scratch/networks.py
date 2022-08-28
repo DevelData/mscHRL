@@ -89,7 +89,6 @@ class SchedulerNetwork(GeneralNetwork):
                  option_interval, 
                  gamma, 
                  option_gamma, 
-                 max_action, 
                  episode_length):
 
         super(SchedulerNetwork, self).__init__(env_name, 
@@ -104,7 +103,6 @@ class SchedulerNetwork(GeneralNetwork):
         self.gamma = gamma
         self.skill_dims = skill_dims # Not sure about using this yet
         self.option_gamma = option_gamma
-        self.max_action = max_action
         self.episode_length = episode_length
         # To prevent samples with zero standard deviation (non-differentiable)
         self.reparameterization_noise = 1e-6
@@ -135,7 +133,6 @@ class SchedulerNetwork(GeneralNetwork):
         sigma = mu_sigma[:, mu_sigma.shape[1]//2:] # Could be source of error
         #sigma = self.sigma(processed_state)
 
-        # To clamp or not to clamp ??????????????
         # Probably should clamp - max value is picked from SAC tutorial
         sigma = T.clamp(sigma, min=self.reparameterization_noise, max=1)
 
@@ -156,23 +153,25 @@ class SchedulerNetwork(GeneralNetwork):
         # Something about sampling with noise
         if reparameterize:
             # Sample from distribution with noise
-            action_samples = probabilities.rsample()
+            skill_samples = probabilities.rsample()
         else:
             # Sample from distribution without noise
-            action_samples = probabilities.sample()
+            skill_samples = probabilities.sample()
 
-        # OpenAI Gym website is down
-        # Perhaps needed for symmetric action space - confirm if continuous 
-        # actions are symmetric
-        actions = T.tanh(action_samples) * T.tensor(self.max_action).to(self.device)
+        # Skill elements have a value between -1 and 1 in paper
+        skills = T.tanh(skill_samples)
 
-        # This I do not understand at all - FIGURE THIS OUT!!!
+        # This is to prevent zeros from being passed into the log function
+        # Potential source of error
+        #skill_samples.data[skill_samples.data.eq(0)] = self.reparameterization_noise
+
         # In the appendix - still some questions around the derivation.
-        log_probability = probabilities.log_prob(action_samples)
-        log_probability = log_probability - T.log(1 - actions.pow(2) + self.reparameterization_noise)
+        # Needed for change of variable
+        log_probability = probabilities.log_prob(skill_samples)
+        log_probability = log_probability - T.log(1 - skills.pow(2) + self.reparameterization_noise)
         log_probability = log_probability.sum(1, keepdim=True)
 
-        return actions, log_probability
+        return skills, log_probability
 
 
     def post_interval_reward(self, log_probs, reward_array, expected_value=True):
