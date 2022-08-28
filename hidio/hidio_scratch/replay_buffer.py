@@ -96,7 +96,7 @@ class WorkerReplayBuffer(object):
         self.next_state_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.state_dims), dtype=np.float32)
         self.action_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.num_actions), dtype=np.float32)
         self.reward_memory = np.zeros(shape=(self.memory_size, self.option_interval))
-        self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims, self.num_actions), dtype=np.float32)
+        self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims), dtype=np.float32)
 
 
     def store_transitions(self, state_array, action_array, next_state_array, skill, reward_array):
