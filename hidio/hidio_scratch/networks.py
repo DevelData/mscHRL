@@ -301,8 +301,7 @@ class ActorNetwork(GeneralNetwork):
                  input_dims, 
                  fc1_size, 
                  fc2_size, 
-                 output_dims, 
-                 num_actions, 
+                 output_dims,
                  max_action):
 
         super(ActorNetwork, self).__init__(env_name,
@@ -313,9 +312,7 @@ class ActorNetwork(GeneralNetwork):
                                            fc1_size, 
                                            fc2_size, 
                                            output_dims)
-        self.num_actions = num_actions
         self.max_action = max_action
-
         # To prevent taking log of 0
         self.reparameterization_noise = 1e-6
 
@@ -408,8 +405,7 @@ class CriticNetwork(GeneralNetwork):
                  input_dims, 
                  fc1_size, 
                  fc2_size, 
-                 output_dims, 
-                 num_actions):
+                 output_dims):
 
         super(CriticNetwork, self).__init__(env_name, 
                                             learning_rate, 
@@ -419,8 +415,6 @@ class CriticNetwork(GeneralNetwork):
                                             fc1_size, 
                                             fc2_size, 
                                             output_dims)
-
-        self.num_actions = num_actions
 
 
     def forward(self, state_action_array):
