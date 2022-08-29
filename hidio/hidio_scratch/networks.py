@@ -332,11 +332,11 @@ class ActorNetwork(GeneralNetwork):
         return mu, sigma
 
 
-    def choose_action(self, state, reparameterize=True):
+    def choose_action(self, input_array, reparameterize=True):
         """
         """
 
-        mu, sigma = self.forward(state) 
+        mu, sigma = self.forward(input_array) 
         probabilities = Normal(mu, sigma)
         
         if reparameterize:

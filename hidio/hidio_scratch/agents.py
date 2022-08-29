@@ -107,7 +107,15 @@ class WorkerAgent(object):
         return
 
 
-    
+    def choose_action(self, state, skill):
+        """
+        
+        """
+
+        state_array = T.tensor(state, dtype=T.float32).to(self.actor_network.device)
+        skill_array = T.tensor(skill, dtype=T.float32).to(self.actor_network.device)
+
+        pass
 
 
 
