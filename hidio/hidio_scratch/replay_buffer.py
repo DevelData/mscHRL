@@ -93,13 +93,20 @@ class WorkerReplayBuffer(object):
         self.memory_counter = 0
         
         self.state_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.state_dims), dtype=np.float32)
-        self.next_state_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.state_dims), dtype=np.float32)
+        self.next_state_memory = copy.deepcopy(self.state_memory)
         self.action_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.num_actions), dtype=np.float32)
         self.reward_memory = np.zeros(shape=(self.memory_size, self.option_interval))
         self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims), dtype=np.float32)
+        self.terminal_memory = np.zeros(shape=(self.memory_size, self.option_interval), dtype=np.bool8)
 
 
-    def store_transitions(self, state_array, action_array, next_state_array, skill, reward_array):
+    def store_transitions(self, 
+                          state_array, 
+                          action_array, 
+                          next_state_array, 
+                          skill, 
+                          reward_array, 
+                          done_array):
         """
         
         """
@@ -111,6 +118,7 @@ class WorkerReplayBuffer(object):
         self.next_state_memory[idx] = next_state_array
         self.skill_memory[idx] = skill
         self.reward_memory[idx] = reward_array
+        self.terminal_memory[idx] = done_array
 
         self.memory_counter += 1
 
@@ -121,9 +129,7 @@ class WorkerReplayBuffer(object):
         """
         
         """
-        # How to sample an action given a state and an option/a skill 
-        # Actor network in traditional SAC only takes state as an input and 
-        # outputs an action
+        
         max_current_memory = min(self.memory_counter, self.memory_size)
         batch = np.random_choice(max_current_memory, size=batch_size)
 
@@ -131,5 +137,6 @@ class WorkerReplayBuffer(object):
         actions_sample = self.action_memory[batch]
         next_states_sample = self.next_state_memory[batch]
         skills_sample = self.skill_memory[batch]
+        done_sample = self.terminal_memory[batch]
 
-        return states_sample, actions_sample, next_states_sample, skills_sample
+        return states_sample, actions_sample, next_states_sample, skills_sample, done_sample
