@@ -71,7 +71,7 @@ class Agent(object):
         # Why default to True
         actions, _ = self.actor_network.sample_normal(state, reparameterize=False)
 
-        return actions.cpu().detach().numpy()[0]
+        return actions.cpu().detach().numpy().squeeze()
 
 
     def remember(self, state, action, next_state, reward, done):
