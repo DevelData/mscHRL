@@ -106,22 +106,6 @@ class WorkerAgent(object):
 
         return
 
-
-    def choose_action(self, state, skill):
-        """
-        State comes in with shape = (n_elems)
-        Skill should come in with shape = (1,n_skill_elems)
-        """
-
-        state_array = T.tensor([state], dtype=T.float32).to(self.actor_network.device)
-        skill_array = T.tensor(skill, dtype=T.float32).to(self.actor_network.device)
-
-        action, _ = self.actor_network.sample_distribution(states_array=state_array, skills_array=skill_array, reparameterize=False)
-
-        # Use .squeeze() because row represents batch size
-        # Row of 1 becomes useless for single action
-        return action.cpu().detach().numpy().squeeze()
-
     
     def remember(self, state_array, action_array, next_state_array, skill, reward_array):
         """
