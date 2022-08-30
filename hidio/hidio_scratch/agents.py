@@ -109,14 +109,88 @@ class WorkerAgent(object):
 
     def choose_action(self, state, skill):
         """
+        State comes in with shape = (n_elems)
+        Skill should come in with shape = (1,n_skill_elems)
+        """
+
+        state_array = T.tensor([state], dtype=T.float32).to(self.actor_network.device)
+        skill_array = T.tensor(skill, dtype=T.float32).to(self.actor_network.device)
+
+        action, _ = self.actor_network.sample_distribution(states_array=state_array, skills_array=skill_array, reparameterize=False)
+
+        # Use .squeeze() because row represents batch size
+        # Row of 1 becomes useless for single action
+        return action.cpu().detach().numpy().squeeze()
+
+    
+    def remember(self, state_array, action_array, next_state_array, skill, reward_array):
+        """
         
         """
 
-        state_array = T.tensor(state, dtype=T.float32).to(self.actor_network.device)
-        skill_array = T.tensor(skill, dtype=T.float32).to(self.actor_network.device)
+        self.memory.store_transitions(state_array, action_array, next_state_array, skill, reward_array)
+
+        return
+
+
+    def save_models(self):
+        """
+        
+        """
+
+        print("############--Saving worker models--############")
+        self.actor_network.save_checkpoint()
+        self.critic_network_1.save_checkpoint()
+        self.critic_network_2.save_checkpoint()
+        self.target_value_network.save_checkpoint()
+        self.value_network.save_checkpoint()
+
+        return
+
+    
+    def load_models(self):
+        """
+        
+        """        
+
+        print("############--Loading worker models--############")
+        self.actor_network.load_checkpoint()
+        self.critic_network_1.load_checkpoint()
+        self.critic_network_2.load_checkpoint()
+        self.target_value_network.load_checkpoint()
+        self.value_network.load_checkpoint()
+
+        return
+
+
+    def transfer_network_params(self, source_network, target_network):
+        """
+        Transfers network parameters from source_network to the target_network.
+        """
 
         pass
 
+
+    def learn(self, discriminator_output):
+        """
+        
+        """
+
+        # Why??
+        #if self.memory.memory_counter < self.batch_size:
+        #    return
+
+        loss = 0
+        actions_array, next_states_sample, skills_sample = self.memory.sample_buffer(self.batch_size)
+        actions_array = T.tensor(actions_array, dtype=T.float32).to(self.actor_network.device)
+        next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.actor_network.device)
+        skills_sample = T.tensor(skills_sample, dtype=T.float32).to(self.actor_network.device)
+
+        for i in range(self.option_interval):
+
+
+        
+        return
 
 
 class Agent(object):
