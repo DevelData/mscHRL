@@ -148,10 +148,9 @@ class Agent(object):
         done = T.tensor(done).to(self.actor_network.device)
 
         # Keep an eye on this
-        value_network_value = self.value_network(state).view(-1)
-        target_value_network_value = self.target_value_network(next_state).view(-1)
+        value_network_value = self.value_network.forward(state).view(-1)
+        target_value_network_value = self.target_value_network.forward(next_state).view(-1)
         target_value_network_value[done] = 0.0
-
 
         actions, log_probability = self.actor_network.sample_normal(state, reparameterize=False)
         log_probability = log_probability.view(-1)

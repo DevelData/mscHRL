@@ -78,7 +78,7 @@ class WorkerAgent(object):
                                           output_dims=1)
         self.target_value_network = ValueNetwork(env_name=self.env_name, 
                                                  learning_rate=self.learning_rate, 
-                                                 name="value_network", 
+                                                 name="target_value_network", 
                                                  checkpoint_dir=self.checkpoint_dir, 
                                                  input_dims=self.observation_space_dims, 
                                                  fc1_size=256, 
@@ -146,6 +146,23 @@ class WorkerAgent(object):
 
         return
 
+    
+    def compute_q_val(self, states, skills, reparameterize):
+        """
+        
+        """
+
+        sampled_actions, log_probs = self.actor_network.sample_distribution(states_array=states, 
+                                                                            skills_array=skills, 
+                                                                            reparameterize=reparameterize)
+        log_probs = log_probs.view(-1)
+        state_action_array = T.cat([states, sampled_actions], dim=1)
+        q1_policy = self.critic_network_1.forward(state_action_array=state_action_array)
+        q2_policy = self.critic_network_2.forward(state_action_array=state_action_array)
+        critic_value = T.min(q1_policy, q2_policy).view(-1)
+
+        return critic_value, log_probs
+
 
     def transfer_network_params(self, source_network, target_network):
         """
@@ -165,14 +182,32 @@ class WorkerAgent(object):
         #    return
 
         loss = 0
-        actions_array, next_states_sample, skills_sample = self.memory.sample_buffer(self.batch_size)
-        actions_array = T.tensor(actions_array, dtype=T.float32).to(self.actor_network.device)
+        states_sample, actions_sample, next_states_sample, skills_sample = self.memory.sample_buffer(self.batch_size)
+        states_sample = T.tensor(states_sample, dtype=T.float32).to(self.actor_network.device)
+        actions_sample = T.tensor(actions_sample, dtype=T.float32).to(self.actor_network.device)
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.actor_network.device)
         skills_sample = T.tensor(skills_sample, dtype=T.float32).to(self.actor_network.device)
 
         for i in range(self.option_interval):
+            # Samples from each interaction between worker and environment
+            states = states_sample[:, i, :]
+            actions = actions_sample[:, i, :]
+            next_states = next_states_sample[:, i, :]
+            skills = skills_sample[:, i, :]
 
+            # Initializing the value networks
+            value_network_value = self.value_network.forward(states).view(-1)
+            target_value_network_value = self.target_value_network.forward(next_states).view(-1)
 
+            # Update value_network
+            critic_value, log_probs = self.compute_q_val(states=states, skills=skills, reparameterize=False)
+            self.value_network.optimizer.zero_grad()
+            value_target = critic_value - log_probs
+            value_loss = 0.5 * F.mse_loss(value_network_value, value_target)
+            value_loss.backward(retain_graph=True)
+            self.value_network.optimizer.step()
+
+            
         
         return
 

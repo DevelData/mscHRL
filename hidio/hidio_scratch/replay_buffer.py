@@ -127,9 +127,9 @@ class WorkerReplayBuffer(object):
         max_current_memory = min(self.memory_counter, self.memory_size)
         batch = np.random_choice(max_current_memory, size=batch_size)
 
-        #states_sample = self.state_memory[batch]
+        states_sample = self.state_memory[batch]
         actions_sample = self.action_memory[batch]
         next_states_sample = self.next_state_memory[batch]
         skills_sample = self.skill_memory[batch]
 
-        return actions_sample, next_states_sample, skills_sample
+        return states_sample, actions_sample, next_states_sample, skills_sample
