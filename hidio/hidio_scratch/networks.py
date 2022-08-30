@@ -139,7 +139,7 @@ class SchedulerNetwork(GeneralNetwork):
         return mu, sigma
 
     
-    def sample_normal(self, state, reparameterize=True):
+    def sample_skill(self, state, reparameterize=True):
         """
         mu dims: batch_size x (skill_dims x num_actions)
         sigma dims = batch_size x (skill_dims x num_actions)
@@ -317,11 +317,11 @@ class ActorNetwork(GeneralNetwork):
         self.reparameterization_noise = 1e-6
 
         
-    def forward(self, state):
+    def forward(self, input_array):
         """
         """
 
-        probability = F.relu(self.fc1(state))
+        probability = F.relu(self.fc1(input_array))
         probability = F.relu(self.fc2(probability))
         mu_sigma = self.output(probability)
         mu = mu_sigma[:, :mu_sigma.shape[1]//2] # Could be source of error
@@ -332,9 +332,13 @@ class ActorNetwork(GeneralNetwork):
         return mu, sigma
 
 
-    def choose_action(self, input_array, reparameterize=True):
+    def sample_distribution(self, states_array, skills_array, reparameterize=True):
         """
+        state_array: (N x observation_elems) tensor (device initialized)
+        skills_array: (N x skill_dims) tensor (device initialized)
         """
+
+        input_array = T.cat([states_array, skills_array], dim=1)
 
         mu, sigma = self.forward(input_array) 
         probabilities = Normal(mu, sigma)
