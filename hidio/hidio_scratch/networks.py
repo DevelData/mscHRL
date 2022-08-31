@@ -231,9 +231,7 @@ class DiscriminatorNetwork(GeneralNetwork):
                  input_dims, 
                  fc1_size, 
                  fc2_size, 
-                 output_dims, 
-                 skill_dims):
-        #self, env_name, learning_rate, dimensions, normal_mu, normal_std, name, checkpoint_dir, fc1_size=64, fc2_size=64):
+                 output_dims):
         
         super(DiscriminatorNetwork, self).__init__(self, 
                                                    env_name,
@@ -244,9 +242,6 @@ class DiscriminatorNetwork(GeneralNetwork):
                                                    fc1_size, 
                                                    fc2_size, 
                                                    output_dims)
-        # Used for sampling - output distribution is assumed to be Gaussian
-        self.skill_dims = skill_dims
-
 
     def forward(self, input_array, use_tanh=False):
         """
