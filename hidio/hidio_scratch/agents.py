@@ -1,4 +1,5 @@
 import os
+import re
 from hidio.hidio_scratch.networks import ActorNetwork, CriticNetwork, ValueNetwork
 import numpy as np
 import torch as T
@@ -13,24 +14,24 @@ class WorkerAgent(object):
     For SAC
     """
 
-    def __init__(self, env, 
-                       max_memory_size, 
-                       reward_scale, 
-                       batch_size, 
-                       polyak_coeff, 
-                       checkpoint_dir, 
-                       option_interval, 
-                       skill_dims, 
-                       gamma, 
-                       learning_rate=10**-4, 
-                       beta=0.01):
+    def __init__(self, 
+                 env, 
+                 max_memory_size, 
+                 reward_scale, 
+                 batch_size, 
+                 polyak_coeff, 
+                 checkpoint_dir, 
+                 option_interval, 
+                 skill_dims, 
+                 gamma, 
+                 learning_rate=10**-4, 
+                 beta=0.01):
 
         self.max_memory_size = max_memory_size
         self.reward_scale = reward_scale
         self.batch_size = batch_size
         self.polyak_coeff = polyak_coeff
         self.checkpoint_dir = checkpoint_dir
-        self.env_name = env
         self.option_interval = option_interval
         self.skill_dims = skill_dims
         self.gamma = gamma
@@ -118,6 +119,19 @@ class WorkerAgent(object):
         self.memory.store_transitions(state_array, action_array, next_state_array, skill, reward_array)
 
         return
+
+    
+    def choose_action(self, state, skill):
+        """
+        state: numpy array of dims (n_elems,)
+        skill: numpy array of dims (m_elems,)
+        """
+
+        state = T.tensor(state).reshape(1,-1).to(self.actor_network.device)
+        skill = T.tensor(skill).reshape(1,-1).to(self.actor_network.device)
+        action, _ = self.actor_network.sample_distribution(states_array=state, skills_array=skill, reparameterize=False)
+
+        return action.cpu().detach().numpy().squeeze(axis=0)
 
 
     def save_models(self):
@@ -249,13 +263,105 @@ class WorkerAgent(object):
         return total_reward
 
 
+
 class Agent(object):
     """
     For HRL
     """
     
-    def __init__(self, env, q_feature):
+    def __init__(self, 
+                 env, 
+                 feature, 
+                 skill_dims, 
+                 learning_rate, 
+                 memory_size, 
+                 checkpoint_dir, 
+                 option_interval, 
+                 gamma, 
+                 option_gamma, 
+                 episode_length, 
+                 reward_scale, 
+                 batch_size, 
+                 polyak_coeff, 
+                 beta):
+
+        self.env_name = env.spec.id
+        self.num_actions = env.action_space.shape[0]
+        self.observation_space_dims = env.observation_space.shape[0]
+
+        self.skill_dims = skill_dims
+        self.learning_rate = learning_rate
+        self.memory_size = memory_size
+        self.checkpoint_dir = checkpoint_dir
+        self.option_interval = option_interval
+        self.gamma = gamma
+        self.option_gamma = option_gamma
+        self.episode_length = episode_length
+        self.reward_scale = reward_scale
+        self.batch_size = batch_size
+        self.polyak_coeff = polyak_coeff
+        self.beta = beta
+
+        self.feature = feature
+        if (self.feature == "state") or (self.feature == "stateDiff"):
+            self.discriminator_input_size = self.observation_space_dims
+        
+        elif (self.feature == "action") or (self.feature == "stateAction"):
+            self.discriminator_input_size = self.observation_space_dims + self.num_actions
+
+        elif self.feature == "stateConcat":
+            self.discriminator_input_size = self.observation_space_dims * self.option_interval
+
+        elif self.feature == "actionConcat":
+            self.discriminator_input_size = self.observation_space_dims + (self.num_actions * self.option_interval)
+
+        else:
+            raise ValueError("Input values can only be 'state', 'action', 'stateDiff', 'stateAction', 'stateConcat', 'actionConcat'")
+
+        
+        self.worker = WorkerAgent(env=env, 
+                                  max_memory_size=self.memory_size, 
+                                  reward_scale=self.reward_scale, 
+                                  batch_size=self.batch_size, 
+                                  polyak_coeff=self.polyak_coeff, 
+                                  checkpoint_dir=self.checkpoint_dir, 
+                                  option_interval=self.option_interval, 
+                                  skill_dims=self.skill_dims, 
+                                  gamma=self.gamma, 
+                                  learning_rate=self.learning_rate, 
+                                  beta=self.beta)
+        self.scheduler = SchedulerNetwork(env_name=self.env_name, 
+                                          learning_rate=self.learning_rate, 
+                                          name="scheduler_network", 
+                                          checkpoint_dir=self.checkpoint_dir, 
+                                          input_dims=self.observation_space_dims, 
+                                          fc1_size=256, 
+                                          fc2_size=256, 
+                                          output_dims=self.skill_dims, 
+                                          option_interval=self.option_interval, 
+                                          gamma=self.gamma, 
+                                          option_gamma=self.option_gamma)
+        self.scheduler_memory = SchedulerBuffer(memory_size=self.memory_size, 
+                                                skill_dims=self.skill_dims, 
+                                                state_dims=self.observation_space_dims, 
+                                                num_actions=self.num_actions)
 
 
+    def generate_skill(self, state):
+        """
+        state: numpy array of (n_elems,)
+        """
+
+        state = T.tensor(state).reshape(1, -1).to(self.scheduler.device)
+        skill, _ = self.scheduler.sample_skill(state=state, reparameterize=False)
+
+        return skill.cpu().detach().numpy().squeeze(axis=0)
+
+
+    def remember(self):
+        pass
+
+    
+    def learn(self):
         pass
 
