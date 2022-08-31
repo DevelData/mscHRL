@@ -284,7 +284,7 @@ class DiscriminatorNetwork(GeneralNetwork):
 
         predicted_skill = self.forward(input_array=input_array)
 
-        return F.mse_loss(predicted_skill, skill)
+        return -1 * F.mse_loss(predicted_skill, skill)
 
 
 
