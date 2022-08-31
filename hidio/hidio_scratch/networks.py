@@ -421,10 +421,11 @@ class CriticNetwork(GeneralNetwork):
                                             output_dims)
 
 
-    def forward(self, state_action_array):
+    def forward(self, state_array, action_array):
         """
         """
 
+        state_action_array = T.cat([state_array, action_array], dim=1)
         action_value = F.relu(self.fc1(state_action_array))
         action_value = F.relu(self.fc2(action_value))
         q_value = self.output(action_value)
