@@ -7,6 +7,7 @@ from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
 from networks import SchedulerNetwork, DiscriminatorNetwork
 
 
+# Needs entropy modulation term alpha
 class WorkerAgent(object):
     """
     For SAC
@@ -21,7 +22,8 @@ class WorkerAgent(object):
                        option_interval, 
                        skill_dims, 
                        gamma, 
-                       learning_rate):
+                       learning_rate=10**-4, 
+                       beta=0.01):
 
         self.max_memory_size = max_memory_size
         self.reward_scale = reward_scale
@@ -33,6 +35,7 @@ class WorkerAgent(object):
         self.skill_dims = skill_dims
         self.gamma = gamma
         self.learning_rate = learning_rate
+        self.beta = beta
 
         self.env_name = env.spec.id
         self.num_actions = env.action_space.shape[0]
@@ -156,9 +159,8 @@ class WorkerAgent(object):
                                                                             skills_array=skills, 
                                                                             reparameterize=reparameterize)
         log_probs = log_probs.view(-1)
-        state_action_array = T.cat([states, sampled_actions], dim=1)
-        q1_policy = self.critic_network_1.forward(state_action_array=state_action_array)
-        q2_policy = self.critic_network_2.forward(state_action_array=state_action_array)
+        q1_policy = self.critic_network_1.forward(state_array=states, action_array=sampled_actions)
+        q2_policy = self.critic_network_2.forward(state_array=states, action_array=sampled_actions)
         critic_value = T.min(q1_policy, q2_policy).view(-1)
 
         return critic_value, log_probs
@@ -177,27 +179,31 @@ class WorkerAgent(object):
         
         """
 
-        # Why??
-        #if self.memory.memory_counter < self.batch_size:
-        #    return
+        # To allow build up of memory in replay buffer
+        if self.memory.memory_counter < self.batch_size:
+            return
 
-        loss = 0
-        states_sample, actions_sample, next_states_sample, skills_sample = self.memory.sample_buffer(self.batch_size)
+        total_reward = 0
+
+        states_sample, actions_sample, next_states_sample, skills_sample, done_sample = self.memory.sample_buffer(self.batch_size)
         states_sample = T.tensor(states_sample, dtype=T.float32).to(self.actor_network.device)
         actions_sample = T.tensor(actions_sample, dtype=T.float32).to(self.actor_network.device)
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.actor_network.device)
         skills_sample = T.tensor(skills_sample, dtype=T.float32).to(self.actor_network.device)
+        done_sample = T.tensor(done_sample).to(self.actor_network.device)
 
         for i in range(self.option_interval):
             # Samples from each interaction between worker and environment
             states = states_sample[:, i, :]
             actions = actions_sample[:, i, :]
             next_states = next_states_sample[:, i, :]
-            skills = skills_sample[:, i, :]
+            skills = skills_sample
+            done = done_sample[:, i, :].view(-1)
 
             # Initializing the value networks
             value_network_value = self.value_network.forward(states).view(-1)
             target_value_network_value = self.target_value_network.forward(next_states).view(-1)
+            target_value_network_value[done] = 0.0
 
             # Update value_network
             critic_value, log_probs = self.compute_q_val(states=states, skills=skills, reparameterize=False)
@@ -207,9 +213,40 @@ class WorkerAgent(object):
             value_loss.backward(retain_graph=True)
             self.value_network.optimizer.step()
 
+            # Should the actor_network losses be backpropagated along with another final update?
+            # The presence of an entropy weighting factor would suggest yes
+            # What is entropy in the actor loss?
+                # log_probs term is the entropy factor
+            # Where is the entropy weighting factor added?
+                # Multiplied by the log_probs term
+            # Entropy weighting term seems to be extremely important for good performance
+            critic_value, log_probs = self.compute_q_val(states=states, skills=skills, reparameterize=True)
+            actor_loss = T.mean(log_probs - critic_value)
+            self.actor_network.optimizer.zero_grad()
+            actor_loss.backward(retain_graph=True)
+            self.actor_network.optimizer.step()
+
+            # Reward calculation
+            reward = discriminator_output - self.beta * log_probs
+            total_reward = total_reward + reward
+
+            # Critic network updates
+            self.critic_network_1.optimizer.zero_grad()
+            self.critic_network_2.optimizer.zero_grad()
+            q_hat = (self.reward_scale * reward) + (self.gamma * target_value_network_value)
+            q1_old_policy = self.critic_network_1.forward(state_array=states, action_array=actions).view(-1)
+            q2_old_policy = self.critic_network_2.forward(state_array=states, action_array=actions).view(-1)
+            critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
+            critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
+            critic_loss = critic_1_loss + critic_2_loss
+            critic_loss.backward()
+            self.critic_network_1.optimizer.step()
+            self.critic_network_2.optimizer.step()
+
+            # Update target_value_network
+            self.update_target_value_network_params()
             
-        
-        return
+        return total_reward
 
 
 class Agent(object):
