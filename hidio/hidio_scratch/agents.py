@@ -345,6 +345,14 @@ class Agent(object):
                                                 skill_dims=self.skill_dims, 
                                                 state_dims=self.observation_space_dims, 
                                                 num_actions=self.num_actions)
+        self.discriminator = DiscriminatorNetwork(env_name=self.env_name, 
+                                                  learning_rate=self.learning_rate, 
+                                                  name="discriminator_network", 
+                                                  checkpoint_dir=self.checkpoint_dir, 
+                                                  input_dims=self.discriminator_input_size, 
+                                                  fc1_size=64, 
+                                                  fc2_size=64, 
+                                                  output_dims=self.skill_dims)
 
 
     def generate_skill(self, state):
@@ -358,10 +366,48 @@ class Agent(object):
         return skill.cpu().detach().numpy().squeeze(axis=0)
 
 
-    def remember(self):
-        pass
+    def remember(self, state, skill, next_state, reward):
+        """
+        state: numpy array of (n_elems,)
+        skill: numpy array of (m_elems,)
+        next_state: numpy array of (n_elems,)
+        reward: float
+        """
+
+        self.scheduler_memory.store_transitions(state, skill, next_state, reward)
+        
+        return
+
+    def save_models(self):
+        """
+        
+        """
+
+        print("************--Saving scheduler and discriminator--************")
+        self.scheduler.save_checkpoint()
+        self.discriminator.save_checkpoint()
+        self.worker.save_models()
+
+        return
 
     
+    def load_models(self):
+        """
+        """
+
+        print("************--Loading scheduler and discriminator--************")
+        self.scheduler.load_checkpoint()
+        self.discriminator.load_checkpoint()
+        self.worker.load_models()
+
+        return
+
+
     def learn(self):
+        """
+        
+        """
+
+        
         pass
 
