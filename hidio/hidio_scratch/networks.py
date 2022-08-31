@@ -84,8 +84,7 @@ class SchedulerNetwork(GeneralNetwork):
                  input_dims, 
                  fc1_size, 
                  fc2_size, 
-                 output_dims, 
-                 skill_dims,
+                 output_dims,
                  option_interval, 
                  gamma, 
                  option_gamma, 
@@ -101,7 +100,6 @@ class SchedulerNetwork(GeneralNetwork):
                                                output_dims)
         self.option_interval = option_interval
         self.gamma = gamma
-        self.skill_dims = skill_dims # Not sure about using this yet
         self.option_gamma = option_gamma
         self.episode_length = episode_length
         # To prevent samples with zero standard deviation (non-differentiable)
