@@ -87,8 +87,7 @@ class SchedulerNetwork(GeneralNetwork):
                  output_dims,
                  option_interval, 
                  gamma, 
-                 option_gamma, 
-                 episode_length):
+                 option_gamma):
 
         super(SchedulerNetwork, self).__init__(env_name, 
                                                learning_rate, 
@@ -101,7 +100,6 @@ class SchedulerNetwork(GeneralNetwork):
         self.option_interval = option_interval
         self.gamma = gamma
         self.option_gamma = option_gamma
-        self.episode_length = episode_length
         # To prevent samples with zero standard deviation (non-differentiable)
         self.reparameterization_noise = 1e-6
 
