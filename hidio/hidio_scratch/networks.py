@@ -188,10 +188,10 @@ class SchedulerNetwork(GeneralNetwork):
         if expected_value:
             rewards = reward_array * self.option_interval_discount
             final_reward = log_probs * rewards
-            return final_reward.mean()
+            return final_reward.mean().item()
 
         else:
-            return reward_array.sum()
+            return reward_array.sum().item()
         
     
     def objective_rewards(self, log_prob, reward_array, batch_idx, horizon_discount=False):
