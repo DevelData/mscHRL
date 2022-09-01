@@ -129,9 +129,12 @@ class WorkerAgent(object):
 
         state = T.tensor(state).reshape(1,-1).to(self.actor_network.device)
         skill = T.tensor(skill).reshape(1,-1).to(self.actor_network.device)
-        action, _ = self.actor_network.sample_distribution(states_array=state, skills_array=skill, reparameterize=False)
+        action, log_probs = self.actor_network.sample_distribution(states_array=state, skills_array=skill, reparameterize=False)
 
-        return action.cpu().detach().numpy().squeeze(axis=0)
+        action = action.cpu().detach().numpy().squeeze(axis=0)
+        log_probs = log_probs.cpu().detach().numpy().squeeze(axis=0)
+
+        return action, log_probs
 
 
     def save_models(self):
@@ -378,6 +381,7 @@ class Agent(object):
         
         return
 
+
     def save_models(self):
         """
         
@@ -408,6 +412,10 @@ class Agent(object):
         
         """
 
-        
+        states_sample, skill_sample, next_states_sample, batch = self.scheduler_memory.sample_buffer(self.batch_size)
+        states_sample = T.tensor(states_sample, dtype=T.float32).to(self.scheduler.device)
+        skill_sample = T.tensor(skill_sample, dtype=T.float32).to(self.scheduler.device)
+        next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.scheduler.device)
+
         pass
 
