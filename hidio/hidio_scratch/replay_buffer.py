@@ -62,10 +62,10 @@ class SchedulerBuffer(object):
         states_sample = self.state_memory[batch]
         skill_sample = self.skill_memory[batch]
         next_states_sample = self.next_state_memory[batch]
-        #rewards_sample = self.reward_memory[batch]
+        rewards_sample = self.reward_memory[batch]
         #terminal_sample = self.terminal_memory[batch]
 
-        return (states_sample, skill_sample, next_states_sample, batch)
+        return (states_sample, skill_sample, next_states_sample, rewards_sample, batch)
     
     
     
