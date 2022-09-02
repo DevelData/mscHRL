@@ -251,7 +251,7 @@ class WorkerAgent(object):
             # Update value_network
             critic_value, log_probs = self.compute_q_val(states=states, skills=skills, reparameterize=False)
             self.value_network.optimizer.zero_grad()
-            value_target = critic_value - log_probs
+            value_target = critic_value - self.alpha * log_probs
             value_loss = 0.5 * F.mse_loss(value_network_value, value_target)
             value_loss.backward(retain_graph=True)
             self.value_network.optimizer.step()
@@ -264,7 +264,7 @@ class WorkerAgent(object):
                 # Multiplied by the log_probs term
             # Entropy weighting term seems to be extremely important for good performance
             critic_value, log_probs = self.compute_q_val(states=states, skills=skills, reparameterize=True)
-            actor_loss = T.mean(log_probs - critic_value)
+            actor_loss = T.mean(self.alpha * log_probs - critic_value)
             self.actor_network.optimizer.zero_grad()
             actor_loss.backward(retain_graph=True)
             self.actor_network.optimizer.step()
@@ -533,7 +533,7 @@ class Agent(object):
         return
 
     
-    def compute_q_val(self,states, reparameterize):
+    def compute_q_val(self, states, reparameterize):
         """
         """
 
@@ -552,11 +552,24 @@ class Agent(object):
         
         """
 
-        states_sample, skill_sample, next_states_sample, rewards_sample, batch = self.scheduler_memory.sample_buffer(self.batch_size)
+        states_sample, skill_sample, next_states_sample, rewards_sample, done_samples, batch = self.scheduler_memory.sample_buffer(self.batch_size)
         states_sample = T.tensor(states_sample, dtype=T.float32).to(self.scheduler.device)
         skill_sample = T.tensor(skill_sample, dtype=T.float32).to(self.scheduler.device)
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.scheduler.device)
         rewards_sample = T.tensor(rewards_sample, dtype=T.float32).to(self.scheduler.device)
+        done_samples = T.tensor(done_samples).to(self.scheduler.device)
+
+        # Initializing the value networks
+        value_network_value = self.value_network.forward(state=states_sample).view(-1)
+        target_value_network_value = self.target_value_network.forward(state=next_states_sample).view(-1)
+        target_value_network_value[done_samples] = 0.0
+
+        # Update value_network
+        critic_value, log_probs = self.compute_q_val(states=states_sample, reparameterize=False)
+        self.value_network.optimizer.zero_grad()
+        value_target = 
+
+
 
         # Update target_value_network
         self.update_target_value_network_params()
