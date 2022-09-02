@@ -26,6 +26,8 @@ class WorkerAgent(object):
                  gamma,
                  alpha,
                  use_auto_entropy_adjustment, 
+                 feature,
+                 use_tanh,
                  learning_rate=10**-4, 
                  beta=0.01):
 
@@ -40,10 +42,31 @@ class WorkerAgent(object):
         self.learning_rate = learning_rate
         self.beta = beta
 
+        # Environment variables
         self.env_name = env.spec.id
         self.num_actions = env.action_space.shape[0]
         self.observation_space_dims = env.observation_space.shape[0]
 
+        # Discriminator variables
+        self.feature = feature
+        self.use_tanh = use_tanh
+        if (self.feature == "state") or (self.feature == "stateDiff"):
+            self.discriminator_input_size = self.observation_space_dims
+        
+        elif (self.feature == "action") or (self.feature == "stateAction"):
+            self.discriminator_input_size = self.observation_space_dims + self.num_actions
+
+        elif self.feature == "stateConcat":
+            self.discriminator_input_size = self.observation_space_dims * self.option_interval
+
+        elif self.feature == "actionConcat":
+            self.discriminator_input_size = self.observation_space_dims + (self.num_actions * self.option_interval)
+
+        else:
+            raise ValueError("Input values can only be 'state', 'action', 'stateDiff', 'stateAction', 'stateConcat', 'actionConcat'")
+
+
+        # Networks
         self.memory = WorkerReplayBuffer(option_interval=self.option_interval, 
                                          memory_size=self.max_memory_size, 
                                          state_dims=self.observation_space_dims, 
@@ -90,6 +113,14 @@ class WorkerAgent(object):
                                                  fc1_size=256, 
                                                  fc2_size=256, 
                                                  output_dims=1)
+        self.discriminator = DiscriminatorNetwork(env_name=self.env_name, 
+                                                  learning_rate=self.learning_rate, 
+                                                  name="discriminator_network", 
+                                                  checkpoint_dir=self.checkpoint_dir, 
+                                                  input_dims=self.discriminator_input_size, 
+                                                  fc1_size=64, 
+                                                  fc2_size=64, 
+                                                  output_dims=self.skill_dims)
 
         # Entropy adjustment factor (alpha)
         self.alpha = alpha
@@ -136,6 +167,41 @@ class WorkerAgent(object):
 
         return
 
+
+    def discriminator_loss(self, 
+                           initial_state,
+                           state,
+                           action, 
+                           next_state, 
+                           next_state_array, 
+                           action_array,
+                           skill):
+        """
+        
+        """
+
+        if self.feature == "state":
+            input_array = state
+        
+        elif self.feature == "action":
+            input_array = T.cat([initial_state, action], dim=1)
+
+        elif self.feature == "stateDiff":
+            input_array = next_state - state
+
+        elif self.feature == "stateAction":
+            input_array = T.cat([action, next_state], dim=1)
+
+        elif self.feature == "stateConcat":
+            input_array = next_state_array.reshape(self.batch_size, -1)
+
+        elif self.feature == "actionConcat":
+            input_array = T.cat([initial_state, action_array.reshape(self.batch_size, -1)], dim=1)
+
+        discriminator_output = self.discriminator.compute_loss(input_array=input_array, skill=skill, use_tanh=self.use_tanh)
+
+        return discriminator_output
+
     
     def remember(self, state_array, action_array, next_state_array, skill, reward_array):
         """
@@ -174,6 +240,7 @@ class WorkerAgent(object):
         self.critic_network_2.save_checkpoint()
         self.target_value_network.save_checkpoint()
         self.value_network.save_checkpoint()
+        self.discriminator.save_checkpoint()
 
         return
 
@@ -189,6 +256,7 @@ class WorkerAgent(object):
         self.critic_network_2.load_checkpoint()
         self.target_value_network.load_checkpoint()
         self.value_network.load_checkpoint()
+        self.discriminator.load_checkpoint()
 
         return
 
@@ -302,8 +370,7 @@ class Agent(object):
     """
     
     def __init__(self, 
-                 env, 
-                 feature, 
+                 env,
                  skill_dims, 
                  learning_rate, 
                  memory_size, 
@@ -350,23 +417,6 @@ class Agent(object):
         self.batch_size = batch_size
         self.polyak_coeff = polyak_coeff
         self.beta = beta
-
-        self.feature = feature
-        if (self.feature == "state") or (self.feature == "stateDiff"):
-            self.discriminator_input_size = self.observation_space_dims
-        
-        elif (self.feature == "action") or (self.feature == "stateAction"):
-            self.discriminator_input_size = self.observation_space_dims + self.num_actions
-
-        elif self.feature == "stateConcat":
-            self.discriminator_input_size = self.observation_space_dims * self.option_interval
-
-        elif self.feature == "actionConcat":
-            self.discriminator_input_size = self.observation_space_dims + (self.num_actions * self.option_interval)
-
-        else:
-            raise ValueError("Input values can only be 'state', 'action', 'stateDiff', 'stateAction', 'stateConcat', 'actionConcat'")
-
         
         self.worker = WorkerAgent(env=env, 
                                   max_memory_size=self.memory_size, 
@@ -396,14 +446,6 @@ class Agent(object):
                                                 skill_dims=self.skill_dims, 
                                                 state_dims=self.observation_space_dims, 
                                                 num_actions=self.num_actions)
-        self.discriminator = DiscriminatorNetwork(env_name=self.env_name, 
-                                                  learning_rate=self.learning_rate, 
-                                                  name="discriminator_network", 
-                                                  checkpoint_dir=self.checkpoint_dir, 
-                                                  input_dims=self.discriminator_input_size, 
-                                                  fc1_size=64, 
-                                                  fc2_size=64, 
-                                                  output_dims=self.skill_dims)
         self.value_network = ValueNetwork(env_name=self.env_name, 
                                           learning_rate=self.learning_rate, 
                                           name="scheduler_value_network", 
@@ -510,7 +552,6 @@ class Agent(object):
         self.target_value_network.save_checkpoint()
         self.critic_network_1.save_checkpoint()
         self.critic_network_2.save_checkpoint()
-        self.discriminator.save_checkpoint()
         self.worker.save_models()
 
         return
@@ -527,7 +568,6 @@ class Agent(object):
         self.target_value_network.load_checkpoint()
         self.critic_network_1.load_checkpoint()
         self.critic_network_2.load_checkpoint()
-        self.discriminator.load_checkpoint()
         self.worker.load_models()
 
         return
@@ -567,7 +607,33 @@ class Agent(object):
         # Update value_network
         critic_value, log_probs = self.compute_q_val(states=states_sample, reparameterize=False)
         self.value_network.optimizer.zero_grad()
-        value_target = 
+        value_target = critic_value - self.alpha * log_probs
+        value_loss = 0.5 * F.mse_loss(value_network_value, value_target)
+        value_loss.backward(retain_graph=True)
+        self.value_network.optimizer.step()
+
+        # Updating the scheduler
+        critic_value, log_probs = self.compute_q_val(states=states_sample, reparameterize=True)
+        scheduler_loss = T.mean(self.alpha * log_probs - critic_value)
+        self.scheduler.optimizer.zero_grad()
+        scheduler_loss.backward(retain_graph=True)
+        self.scheduler.optimizer.step()
+
+
+        # Updating the critic networks
+        self.critic_network_1.optimizer.zero_grad()
+        self.critic_network_2.optimizer.zero_grad()
+        q_hat = (self.reward_scale * rewards_sample) + (self.gamma * target_value_network_value)
+        q1_old_policy = self.critic_network_1.forward(state_array=states_sample, action_array=skill_sample)
+        q2_old_policy = self.critic_network_2.forward(state_array=states_sample, action_array=skill_sample)
+        critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
+        critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
+        critic_loss = critic_1_loss + critic_2_loss
+        critic_loss.backward()
+        self.critic_network_1.optimizer.step()
+        self.critic_network_2.optimizer.step()
+
+
 
 
 
