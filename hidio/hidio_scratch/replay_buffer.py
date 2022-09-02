@@ -27,10 +27,10 @@ class SchedulerBuffer(object):
         self.next_state_memory = copy.deepcopy(self.state_memory)
         self.reward_memory = np.zeros(shape=self.memory_size, dtype=np.float32)
         self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims), dtype=np.float32)
-        #self.terminal_memory = np.zeros(shape=self.memory_size, dtype=np.bool8)
+        self.terminal_memory = np.zeros(shape=self.memory_size, dtype=np.bool8)
     
     
-    def store_transitions(self, state, skill, next_state, reward):
+    def store_transitions(self, state, skill, next_state, reward, done):
         """
         Storing the current state, skill (set of actions), next_states and the 
         reward (s_(h,0), u_h, s_(h+1, 0), R_h). R_h is the result of the rewards
@@ -45,6 +45,7 @@ class SchedulerBuffer(object):
         self.skill_memory[idx] = skill
         self.next_state_memory[idx] = next_state
         self.reward_memory[idx] = reward
+        self.terminal_memory[idx] = done
 
         self.memory_counter += 1
         
@@ -63,9 +64,9 @@ class SchedulerBuffer(object):
         skill_sample = self.skill_memory[batch]
         next_states_sample = self.next_state_memory[batch]
         rewards_sample = self.reward_memory[batch]
-        #terminal_sample = self.terminal_memory[batch]
+        done_sample = self.terminal_memory[batch]
 
-        return (states_sample, skill_sample, next_states_sample, rewards_sample, batch)
+        return (states_sample, skill_sample, next_states_sample, rewards_sample, done_sample, batch)
     
     
     
