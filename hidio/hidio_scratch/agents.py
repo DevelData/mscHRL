@@ -645,15 +645,14 @@ class Agent(object):
         self.critic_network_1.optimizer.step()
         self.critic_network_2.optimizer.step()
 
-
-
-
+        # Updating networks in agent - discriminator and worker
+        self.worker.learn()
 
         # Update target_value_network
         self.update_target_value_network_params()
         
         # Update alpha
-        self.adjust_alpha(log_prob=-------------)
+        self.adjust_alpha(log_prob=log_probs)
 
         return
 
