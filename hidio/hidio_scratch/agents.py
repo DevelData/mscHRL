@@ -315,11 +315,28 @@ class Agent(object):
                  reward_scale, 
                  batch_size, 
                  polyak_coeff, 
-                 beta):
+                 beta, 
+                 alpha, 
+                 use_auto_entropy_adjustment, 
+                 min_entropy_target, 
+                 w_alpha, 
+                 w_auto_entropy_adjustment):
 
+        # Environment description attributes
         self.env_name = env.spec.id
         self.num_actions = env.action_space.shape[0]
         self.observation_space_dims = env.observation_space.shape[0]
+
+        # Entropy modulating terms
+        self.alpha = alpha
+        self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
+        self.min_entropy_target = min_entropy_target 
+        self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
+        self.log_alpha = T.ones(1, requires_grad=True, device=self.actor_network.device) * self.min_entropy_target
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
+        self.w_alpha = w_alpha
+        self.w_auto_entropy_adjustment = w_auto_entropy_adjustment
+
 
         self.skill_dims = skill_dims
         self.learning_rate = learning_rate
@@ -361,7 +378,9 @@ class Agent(object):
                                   skill_dims=self.skill_dims, 
                                   gamma=self.gamma, 
                                   learning_rate=self.learning_rate, 
-                                  beta=self.beta)
+                                  beta=self.beta, 
+                                  alpha=self.w_alpha,
+                                  use_auto_entropy_adjustment=self.w_auto_entropy_adjustment)
         self.scheduler = SchedulerNetwork(env_name=self.env_name, 
                                           learning_rate=self.learning_rate, 
                                           name="scheduler_network", 
@@ -385,6 +404,75 @@ class Agent(object):
                                                   fc1_size=64, 
                                                   fc2_size=64, 
                                                   output_dims=self.skill_dims)
+        self.value_network = ValueNetwork(env_name=self.env_name, 
+                                          learning_rate=self.learning_rate, 
+                                          name="scheduler_value_network", 
+                                          checkpoint_dir=self.checkpoint_dir, 
+                                          input_dims=self.observation_space_dims, 
+                                          fc1_size=256, 
+                                          fc2_size=256, 
+                                          output_dims=1)
+        self.target_value_network = ValueNetwork(env_name=self.env_name, 
+                                                 learning_rate=self.learning_rate, 
+                                                 name="scheduler_target_value_network", 
+                                                 checkpoint_dir=self.checkpoint_dir, 
+                                                 input_dims=self.observation_space_dims, 
+                                                 fc1_size=256, 
+                                                 fc2_size=256, 
+                                                 output_dims=1)
+        self.critic_network_1 = CriticNetwork(env_name=self.env_name, 
+                                              learning_rate=self.learning_rate, 
+                                              name="scheduler_critic_network_1", 
+                                              checkpoint_dir=self.checkpoint_dir, 
+                                              input_dims=self.observation_space_dims + self.skill_dims, 
+                                              fc1_size=256, 
+                                              fc2_size=256, 
+                                              output_dims=1)
+        self.critic_network_2 = CriticNetwork(env_name=self.env_name, 
+                                              learning_rate=self.learning_rate, 
+                                              name="scheduler_critic_network_2", 
+                                              checkpoint_dir=self.checkpoint_dir, 
+                                              input_dims=self.observation_space_dims + self.skill_dims, 
+                                              fc1_size=256, 
+                                              fc2_size=256, 
+                                              output_dims=1)
+        
+        # Align parameters of value_network and target_value_network
+        self.update_target_value_network_params(polyak_coeff=1)
+
+
+    def update_target_value_network_params(self, polyak_coeff):
+        """
+        
+        """
+
+        if polyak_coeff is None:
+            polyak_coeff = self.polyak_coeff
+
+        target_value_network_state_dict = dict(self.target_value_network.named_parameters())
+        value_network_state_dict = dict(self.value_network.named_parameters())
+
+        for key in value_network_state_dict:
+            value_network_state_dict[key] = (polyak_coeff * value_network_state_dict[key].clone()) + ((1-polyak_coeff) * target_value_network_state_dict[key].clone())
+
+        self.target_value_network.load_state_dict(value_network_state_dict)
+
+        return
+
+    
+    def adjust_alpha(self, log_prob):
+        """
+        Used to adjust the entropy modulating term alpha.
+        """
+
+        if self.use_auto_entropy_adjustment:
+            alpha_loss = (self.log_alpha * (-log_prob - self.target_entropy).detach()).mean()
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+            self.alpha = self.log_alpha.exp()
+
+        return
 
 
     def generate_skill(self, state):
