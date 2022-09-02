@@ -261,12 +261,12 @@ class DiscriminatorNetwork(GeneralNetwork):
         return predicted_skill
 
 
-    def compute_loss(self, input_array, skill):
+    def compute_loss(self, input_array, skill, use_tanh):
         """
         Check feature extractor table to know what to input in input_array.
         """
 
-        predicted_skill = self.forward(input_array=input_array)
+        predicted_skill = self.forward(input_array=input_array, use_tanh=use_tanh)
 
         return -1 * F.mse_loss(predicted_skill, skill)
 
