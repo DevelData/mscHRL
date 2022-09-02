@@ -15,6 +15,8 @@ class Agent(object):
     # Modulate the parameters of the target value network - tau
     # 2 networks - value and target value networks
     def __init__(self,
+                 alpha=0.2,
+                 use_auto_entropy_adjustment=False,
                  critic_lr=0.0003,
                  value_lr=0.0003,
                  actor_lr=0.0003,
@@ -59,6 +61,28 @@ class Agent(object):
                                                  name="target_value_network")
         # Align parameters of value_network and target_value_network
         self.update_network_parameters(tau=1)
+
+        # Entropy adjustment factor (alpha)
+        self.alpha = alpha
+        self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
+        self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
+        self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor_network.device)
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=actor_lr)
+
+
+    def adjust_alpha(self, log_prob):
+        """
+        Automatically adjusts the value of alpha to provide a good balance of
+        exploration and exploitation.
+        """
+        if self.use_auto_entropy_adjustment:
+            alpha_loss = (self.log_alpha * (-log_prob - self.target_entropy).detach()).mean()
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+            self.alpha = self.log_alpha.exp()
+
+        return
 
 
     def choose_action(self, observation):
@@ -159,7 +183,7 @@ class Agent(object):
         critic_value = T.min(q1_new_policy, q2_new_policy).view(-1)
 
         self.value_network.optimizer.zero_grad()
-        value_target = critic_value - log_probability
+        value_target = critic_value - self.alpha * log_probability
         value_loss = 0.5 * F.mse_loss(value_network_value, value_target)
         value_loss.backward(retain_graph=True)
         self.value_network.optimizer.step()
@@ -172,7 +196,7 @@ class Agent(object):
         q2_new_policy = self.critic_network_2.forward(state, actions)
         critic_value = T.min(q1_new_policy, q2_new_policy).view(-1)
 
-        actor_loss = T.mean(log_probability - critic_value)
+        actor_loss = T.mean(self.alpha * log_probability - critic_value)
         self.actor_network.optimizer.zero_grad()
         actor_loss.backward(retain_graph=True)
         self.actor_network.optimizer.step()
@@ -189,4 +213,8 @@ class Agent(object):
         self.critic_network_1.optimizer.step()
         self.critic_network_2.optimizer.step()
 
+        # Update target_value_network
         self.update_network_parameters()
+
+        # Update alpha
+        self.adjust_alpha(log_prob=log_probability)
