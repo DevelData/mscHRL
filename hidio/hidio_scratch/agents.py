@@ -285,7 +285,7 @@ class WorkerAgent(object):
         pass
 
 
-    def learn(self, discriminator_output):
+    def learn(self):
         """
         
         """
@@ -337,9 +337,21 @@ class WorkerAgent(object):
             actor_loss.backward(retain_graph=True)
             self.actor_network.optimizer.step()
 
+            # Discriminator loss
+            discriminator_output = self.discriminator_loss(initial_state=states_sample[:, 0, :], 
+                                                           state=states, 
+                                                           action=actions, 
+                                                           next_state=next_states, 
+                                                           action_array=actions_sample, 
+                                                           skill=skills)
+            discriminator_loss = -1 * discriminator_output
+            self.discriminator.optimizer.zero_grad()
+            discriminator_loss.backward(retain_graph=True)
+            self.discriminator.optimizer.step()
+
             # Reward calculation
             reward = discriminator_output - self.beta * log_probs
-            total_reward = total_reward + reward
+            total_reward = total_reward + reward.detach()
 
             # Critic network updates
             self.critic_network_1.optimizer.zero_grad()
@@ -360,7 +372,7 @@ class WorkerAgent(object):
             # Update alpha
             self.adjust_alpha(log_prob=log_probs)
             
-        return total_reward
+        return total_reward / self.option_interval
 
 
 
