@@ -4,6 +4,7 @@ import torch as T
 import torch.nn.functional as F
 from replay_buffer import ReplayBuffer
 from networks import CriticNetwork, ValueNetwork, ActorNetwork
+import torch.optim as optim
 
 class Agent(object):
     """

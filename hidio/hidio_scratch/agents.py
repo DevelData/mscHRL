@@ -1,9 +1,9 @@
 import os
-import re
 from hidio.hidio_scratch.networks import ActorNetwork, CriticNetwork, ValueNetwork
 import numpy as np
 import torch as T
 import torch.nn.functional as F
+import torch.optim as optim
 from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
 from networks import SchedulerNetwork, DiscriminatorNetwork
 
@@ -23,7 +23,9 @@ class WorkerAgent(object):
                  checkpoint_dir, 
                  option_interval, 
                  skill_dims, 
-                 gamma, 
+                 gamma,
+                 alpha,
+                 use_auto_entropy_adjustment, 
                  learning_rate=10**-4, 
                  beta=0.01):
 
@@ -89,7 +91,15 @@ class WorkerAgent(object):
                                                  fc2_size=256, 
                                                  output_dims=1)
 
-        self.update_target_value_network_params(polyak_coeff)
+        # Entropy adjustment factor (alpha)
+        self.alpha = alpha
+        self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
+        self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
+        self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor_network.device)
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
+
+        # Align parameters of value_network and target_value_network
+        self.update_target_value_network_params(polyak_coeff=1)
 
     
     def update_target_value_network_params(self, polyak_coeff):
@@ -107,6 +117,22 @@ class WorkerAgent(object):
             value_network_state_dict[key] = (polyak_coeff * value_network_state_dict[key].clone()) + ((1-polyak_coeff) * target_value_network_state_dict[key].clone())
 
         self.target_value_network.load_state_dict(value_network_state_dict)
+
+        return
+
+
+    def adjust_alpha(self, log_prob):
+        """
+        Automatically adjusts the value of alpha to provide a good balance of
+        exploration and exploitation.
+        """
+
+        if self.use_auto_entropy_adjustment:
+            alpha_loss = (self.log_alpha * (-log_prob - self.target_entropy).detach()).mean()
+            self.alpha_optimizer.zero_grad()
+            alpha_loss.backward()
+            self.alpha_optimizer.step()
+            self.alpha = self.log_alpha.exp()
 
         return
 
@@ -262,6 +288,9 @@ class WorkerAgent(object):
 
             # Update target_value_network
             self.update_target_value_network_params()
+
+            # Update alpha
+            self.adjust_alpha(log_prob=log_probs)
             
         return total_reward
 
@@ -412,10 +441,11 @@ class Agent(object):
         
         """
 
-        states_sample, skill_sample, next_states_sample, batch = self.scheduler_memory.sample_buffer(self.batch_size)
+        states_sample, skill_sample, next_states_sample, rewards_sample, batch = self.scheduler_memory.sample_buffer(self.batch_size)
         states_sample = T.tensor(states_sample, dtype=T.float32).to(self.scheduler.device)
         skill_sample = T.tensor(skill_sample, dtype=T.float32).to(self.scheduler.device)
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.scheduler.device)
+        rewards_sample = T.tensor(rewards_sample, dtype=T.float32).to(self.scheduler.device)
 
         pass
 
