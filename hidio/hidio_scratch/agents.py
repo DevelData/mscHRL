@@ -223,8 +223,8 @@ class WorkerAgent(object):
         """
 
         # To allow build up of memory in replay buffer
-        if self.memory.memory_counter < self.batch_size:
-            return
+        #if self.memory.memory_counter < self.batch_size:
+        #    return
 
         total_reward = 0
 
