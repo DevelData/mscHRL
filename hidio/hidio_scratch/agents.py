@@ -506,6 +506,10 @@ class Agent(object):
 
         print("************--Saving scheduler and discriminator--************")
         self.scheduler.save_checkpoint()
+        self.value_network.save_checkpoint()
+        self.target_value_network.save_checkpoint()
+        self.critic_network_1.save_checkpoint()
+        self.critic_network_2.save_checkpoint()
         self.discriminator.save_checkpoint()
         self.worker.save_models()
 
@@ -518,6 +522,10 @@ class Agent(object):
 
         print("************--Loading scheduler and discriminator--************")
         self.scheduler.load_checkpoint()
+        self.value_network.load_checkpoint()
+        self.target_value_network.load_checkpoint()
+        self.critic_network_1.load_checkpoint()
+        self.critic_network_2.load_checkpoint()
         self.discriminator.load_checkpoint()
         self.worker.load_models()
 
@@ -535,5 +543,11 @@ class Agent(object):
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.scheduler.device)
         rewards_sample = T.tensor(rewards_sample, dtype=T.float32).to(self.scheduler.device)
 
-        pass
+        # Update target_value_network
+        self.update_target_value_network_params()
+        
+        # Update alpha
+        self.adjust_alpha(log_prob=-------------)
+
+        return
 
