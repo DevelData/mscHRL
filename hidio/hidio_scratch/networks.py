@@ -177,13 +177,12 @@ class SchedulerNetwork(GeneralNetwork):
             Same as reward - log_prob is actually log likelihood.
         
         log_probs: from actor network of worker module
-            Size: option_interval x 1
+            Type: numpy array
+            Size: 1 x option_interval
         reward_array: from environment
-            Size: option_interval x 1
+            Type: numpy array
+            Size: 1 x option_interval
         """
-
-        reward_array = T.tensor(reward_array).to(self.device)
-        log_probs = T.tensor(log_probs).to(self.device)
 
         if expected_value:
             rewards = reward_array * self.option_interval_discount
