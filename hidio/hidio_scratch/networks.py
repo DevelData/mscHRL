@@ -137,8 +137,8 @@ class SchedulerNetwork(GeneralNetwork):
     
     def sample_skill(self, state, reparameterize=True):
         """
-        mu dims: batch_size x (skill_dims x num_actions)
-        sigma dims = batch_size x (skill_dims x num_actions)
+        mu dims: batch_size x skill_dims
+        sigma dims = batch_size x skill_dims
         
         """
 

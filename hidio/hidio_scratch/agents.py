@@ -518,6 +518,7 @@ class Agent(object):
     
     def load_models(self):
         """
+
         """
 
         print("************--Loading scheduler and discriminator--************")
@@ -530,6 +531,20 @@ class Agent(object):
         self.worker.load_models()
 
         return
+
+    
+    def compute_q_val(self,states, reparameterize):
+        """
+        """
+
+        sampled_skills, log_probs = self.scheduler.sample_skill(state=states, 
+                                                                reparameterize=reparameterize)
+        log_probs = log_probs.view(-1)
+        q1_policy = self.critic_network_1.forward(state_array=states, action_array=sampled_skills)
+        q2_policy = self.critic_network_2.forward(state_array=states, action_array=sampled_skills)
+        critic_value = T.min(q1_policy, q2_policy).view(-1)
+
+        return critic_value, log_probs
 
 
     def learn(self):
