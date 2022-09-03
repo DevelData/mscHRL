@@ -401,7 +401,8 @@ class Agent(object):
                  use_auto_entropy_adjustment, 
                  min_entropy_target, 
                  w_alpha, 
-                 w_auto_entropy_adjustment):
+                 w_auto_entropy_adjustment, 
+                 use_tanh):
 
         # Environment description attributes
         self.env_name = env.spec.id
@@ -430,6 +431,7 @@ class Agent(object):
         self.batch_size = batch_size
         self.polyak_coeff = polyak_coeff
         self.beta = beta
+        self.use_tanh = use_tanh
 
         # Networks
         self.worker = WorkerAgent(env=env, 
@@ -444,7 +446,8 @@ class Agent(object):
                                   learning_rate=self.learning_rate, 
                                   beta=self.beta, 
                                   alpha=self.w_alpha,
-                                  use_auto_entropy_adjustment=self.w_auto_entropy_adjustment)
+                                  use_auto_entropy_adjustment=self.w_auto_entropy_adjustment, 
+                                  use_tanh=self.use_tanh)
         self.scheduler = SchedulerNetwork(env_name=self.env_name, 
                                           learning_rate=self.learning_rate, 
                                           name="scheduler_network", 
@@ -616,7 +619,7 @@ class Agent(object):
         """
 
         if expected_value:
-            rewards = T.tensor(reward_array * self.option_interval_discount).to(self.scheduler.device)
+            rewards = reward_array * self.option_interval_discount
             final_reward = actor_log_probs * rewards
             return final_reward.mean().item()
 
