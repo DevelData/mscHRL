@@ -687,7 +687,7 @@ class Agent(object):
         self.critic_network_2.optimizer.step()
 
         # Updating networks in agent - discriminator and worker
-        self.worker.learn()
+        worker_reward = self.worker.learn()
 
         # Update target_value_network
         self.update_target_value_network_params()
@@ -695,5 +695,5 @@ class Agent(object):
         # Update alpha
         self.adjust_alpha(log_prob=log_probs)
 
-        return
+        return worker_reward
 
