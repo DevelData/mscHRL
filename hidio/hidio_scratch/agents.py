@@ -1,4 +1,6 @@
 import os
+import copy
+from re import X
 from hidio.hidio_scratch.networks import ActorNetwork, CriticNetwork, ValueNetwork
 import numpy as np
 import torch as T
@@ -620,6 +622,20 @@ class Agent(object):
 
         else:
             return reward_array.sum().item()
+
+    
+    def generate_empty_arrays(self):
+        """
+        Generates empty numpy arrays for worker
+        """
+
+        states_array = np.zeros(shape=(self.option_interval, self.observation_space_dims), dtype=np.float32)
+        next_states_array = copy.deepcopy(states_array)
+        actions_array = np.zeros(shape=(self.option_interval, self.num_actions), dtype=np.float32)
+        rewards_array = np.zeros(shape=(self.option_interval), dtype=np.float32)
+        done_array = np.zeros(shape=(self.option_interval), dtype=np.bool8)
+
+        return states_array, actions_array, next_states_array, rewards_array, done_array
 
 
     def learn(self):

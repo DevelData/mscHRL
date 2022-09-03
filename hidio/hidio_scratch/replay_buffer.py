@@ -94,7 +94,7 @@ class WorkerReplayBuffer(object):
         self.state_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.state_dims), dtype=np.float32)
         self.next_state_memory = copy.deepcopy(self.state_memory)
         self.action_memory = np.zeros(shape=(self.memory_size, self.option_interval, self.num_actions), dtype=np.float32)
-        self.reward_memory = np.zeros(shape=(self.memory_size, self.option_interval))
+        self.reward_memory = np.zeros(shape=(self.memory_size, self.option_interval), dtype=np.float32)
         self.skill_memory = np.zeros(shape=(self.memory_size, self.skill_dims), dtype=np.float32)
         self.terminal_memory = np.zeros(shape=(self.memory_size, self.option_interval), dtype=np.bool8)
 
