@@ -633,9 +633,10 @@ class Agent(object):
         next_states_array = copy.deepcopy(states_array)
         actions_array = np.zeros(shape=(self.option_interval, self.num_actions), dtype=np.float32)
         rewards_array = np.zeros(shape=(self.option_interval), dtype=np.float32)
+        actor_log_probs_array = copy.deepcopy(rewards_array)
         done_array = np.zeros(shape=(self.option_interval), dtype=np.bool8)
 
-        return states_array, actions_array, next_states_array, rewards_array, done_array
+        return states_array, actions_array, next_states_array, rewards_array, actor_log_probs_array, done_array
 
 
     def learn(self):
