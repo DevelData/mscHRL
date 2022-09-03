@@ -416,7 +416,6 @@ class Agent(object):
         self.w_alpha = w_alpha
         self.w_auto_entropy_adjustment = w_auto_entropy_adjustment
 
-
         self.skill_dims = skill_dims
         self.learning_rate = learning_rate
         self.memory_size = memory_size
@@ -429,7 +428,8 @@ class Agent(object):
         self.batch_size = batch_size
         self.polyak_coeff = polyak_coeff
         self.beta = beta
-        
+
+        # Networks
         self.worker = WorkerAgent(env=env, 
                                   max_memory_size=self.memory_size, 
                                   reward_scale=self.reward_scale, 
@@ -452,8 +452,7 @@ class Agent(object):
                                           fc2_size=256, 
                                           output_dims=self.skill_dims, 
                                           option_interval=self.option_interval, 
-                                          gamma=self.gamma, 
-                                          option_gamma=self.option_gamma)
+                                          gamma=self.gamma)
         self.scheduler_memory = SchedulerBuffer(memory_size=self.memory_size, 
                                                 skill_dims=self.skill_dims, 
                                                 state_dims=self.observation_space_dims, 
@@ -490,6 +489,10 @@ class Agent(object):
                                               fc1_size=256, 
                                               fc2_size=256, 
                                               output_dims=1)
+        
+        # Array for discounting in the loss function
+        self.option_interval_discount = np.full(self.option_interval, self.option_gamma)
+        self.option_interval_discount = np.power(self.option_interval_discount, [i for i in range(self.option_interval)])
         
         # Align parameters of value_network and target_value_network
         self.update_target_value_network_params(polyak_coeff=1)
@@ -597,6 +600,27 @@ class Agent(object):
         critic_value = T.min(q1_policy, q2_policy).view(-1)
 
         return critic_value, log_probs
+
+
+    def post_interval_reward(self, actor_log_probs, reward_array, expected_value=True):
+        """
+        Calculates the reward for the scheduler after the option interval (K).
+        
+        log_probs: from actor network of worker module
+            Type: numpy array
+            Size: 1 x option_interval
+        reward_array: from environment
+            Type: numpy array
+            Size: 1 x option_interval
+        """
+
+        if expected_value:
+            rewards = T.tensor(reward_array * self.option_interval_discount).to(self.scheduler.device)
+            final_reward = actor_log_probs * rewards
+            return final_reward.mean().item()
+
+        else:
+            return reward_array.sum().item()
 
 
     def learn(self):

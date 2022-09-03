@@ -99,14 +99,8 @@ class SchedulerNetwork(GeneralNetwork):
                                                output_dims)
         self.option_interval = option_interval
         self.gamma = gamma
-        self.option_gamma = option_gamma
         # To prevent samples with zero standard deviation (non-differentiable)
         self.reparameterization_noise = 1e-6
-
-        # Array for discounting in the loss function
-        self.option_interval_discount = np.full(self.option_interval, self.option_gamma)
-        self.option_interval_discount = np.power(self.option_interval_discount, [i for i in range(self.option_interval)])
-        self.option_interval_discount = T.tensor(self.option_interval_discount).to(self.device)
 
         # Additional layer for calculation of standard deviation
         #self.sigma = nn.Linear(in_features=self.fc2_size, 
@@ -168,31 +162,9 @@ class SchedulerNetwork(GeneralNetwork):
         log_probability = log_probability.sum(1, keepdim=True)
 
         return skills, log_probability
-
-
-    def post_interval_reward(self, log_probs, reward_array, expected_value=True):
-        """
-        Calculates the reward for the scheduler after the option interval (K).
-        1. Find out the dimensions for log_prob_actions
-            Same as reward - log_prob is actually log likelihood.
-        
-        log_probs: from actor network of worker module
-            Type: numpy array
-            Size: 1 x option_interval
-        reward_array: from environment
-            Type: numpy array
-            Size: 1 x option_interval
-        """
-
-        if expected_value:
-            rewards = reward_array * self.option_interval_discount
-            final_reward = log_probs * rewards
-            return final_reward.mean().item()
-
-        else:
-            return reward_array.sum().item()
-        
+                
     
+    # Check this out - FOCUS!!!
     def objective_rewards(self, log_prob, reward_array, batch_idx, horizon_discount=False):
         """
         Computes the loss value for the Scheduler.
