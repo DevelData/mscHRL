@@ -12,15 +12,13 @@ class SchedulerBuffer(object):
     def __init__(self, 
                  memory_size, 
                  skill_dims, 
-                 state_dims, 
-                 num_actions):
+                 state_dims):
 
         # K = option_interval, I don't know where to use it yet
         # Don't need to use K for the SchedulerBuffer
         self.memory_size = memory_size
         self.memory_counter = 0
         self.state_dims = state_dims
-        self.num_actions = num_actions
         self.skill_dims = skill_dims
         
         self.state_memory = np.zeros(shape=(self.memory_size, self.state_dims), dtype=np.float32)

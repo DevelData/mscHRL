@@ -145,7 +145,7 @@ class WorkerAgent(object):
         value_network_state_dict = dict(self.value_network.named_parameters())
 
         for key in value_network_state_dict:
-            value_network_state_dict[key] = (polyak_coeff * value_network_state_dict[key].clone()) + ((1-polyak_coeff) * target_value_network_state_dict[key].clone())
+            value_network_state_dict[key] = ((1-polyak_coeff) * value_network_state_dict[key].clone()) + (polyak_coeff * target_value_network_state_dict[key].clone())
 
         self.target_value_network.load_state_dict(value_network_state_dict)
 
@@ -455,8 +455,7 @@ class Agent(object):
                                           gamma=self.gamma)
         self.scheduler_memory = SchedulerBuffer(memory_size=self.memory_size, 
                                                 skill_dims=self.skill_dims, 
-                                                state_dims=self.observation_space_dims, 
-                                                num_actions=self.num_actions)
+                                                state_dims=self.observation_space_dims)
         self.value_network = ValueNetwork(env_name=self.env_name, 
                                           learning_rate=self.learning_rate, 
                                           name="scheduler_value_network", 
@@ -510,7 +509,7 @@ class Agent(object):
         value_network_state_dict = dict(self.value_network.named_parameters())
 
         for key in value_network_state_dict:
-            value_network_state_dict[key] = (polyak_coeff * value_network_state_dict[key].clone()) + ((1-polyak_coeff) * target_value_network_state_dict[key].clone())
+            value_network_state_dict[key] = ((1-polyak_coeff) * value_network_state_dict[key].clone()) + (polyak_coeff * target_value_network_state_dict[key].clone())
 
         self.target_value_network.load_state_dict(value_network_state_dict)
 
