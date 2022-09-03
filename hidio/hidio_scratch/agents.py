@@ -391,8 +391,7 @@ class Agent(object):
                  checkpoint_dir, 
                  option_interval, 
                  gamma, 
-                 option_gamma, 
-                 episode_length, 
+                 option_gamma,
                  reward_scale, 
                  batch_size, 
                  polyak_coeff, 
@@ -426,7 +425,6 @@ class Agent(object):
         self.option_interval = option_interval
         self.gamma = gamma
         self.option_gamma = option_gamma
-        self.episode_length = episode_length
         self.reward_scale = reward_scale
         self.batch_size = batch_size
         self.polyak_coeff = polyak_coeff
