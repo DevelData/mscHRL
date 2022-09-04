@@ -205,12 +205,12 @@ class WorkerAgent(object):
         return discriminator_output
 
     
-    def remember(self, state_array, action_array, next_state_array, skill, reward_array):
+    def remember(self, state_array, action_array, next_state_array, skill, reward_array, done_array):
         """
         
         """
 
-        self.memory.store_transitions(state_array, action_array, next_state_array, skill, reward_array)
+        self.memory.store_transitions(state_array, action_array, next_state_array, skill, reward_array, done_array)
 
         return
 
@@ -293,8 +293,8 @@ class WorkerAgent(object):
         """
 
         # To allow build up of memory in replay buffer
-        #if self.memory.memory_counter < self.batch_size:
-        #    return
+        if self.memory.memory_counter < self.batch_size:
+            return
 
         total_reward = 0
 
@@ -401,7 +401,8 @@ class Agent(object):
                  min_entropy_target, 
                  w_alpha, 
                  w_auto_entropy_adjustment, 
-                 use_tanh):
+                 use_tanh, 
+                 feature):
 
         # Environment description attributes
         self.env_name = env.spec.id
@@ -430,6 +431,7 @@ class Agent(object):
         self.polyak_coeff = polyak_coeff
         self.beta = beta
         self.use_tanh = use_tanh
+        self.feature = feature
 
         # Networks
         self.worker = WorkerAgent(env=env, 
@@ -445,7 +447,8 @@ class Agent(object):
                                   beta=self.beta, 
                                   alpha=self.w_alpha,
                                   use_auto_entropy_adjustment=self.w_auto_entropy_adjustment, 
-                                  use_tanh=self.use_tanh)
+                                  use_tanh=self.use_tanh, 
+                                  feature=self.feature)
         self.scheduler = SchedulerNetwork(env_name=self.env_name, 
                                           learning_rate=self.learning_rate, 
                                           name="scheduler_network", 
@@ -545,7 +548,7 @@ class Agent(object):
         return skill.cpu().detach().numpy().squeeze(axis=0)
 
 
-    def remember(self, state, skill, next_state, reward):
+    def remember(self, state, skill, next_state, reward, done):
         """
         state: numpy array of (n_elems,)
         skill: numpy array of (m_elems,)
@@ -553,7 +556,7 @@ class Agent(object):
         reward: float
         """
 
-        self.scheduler_memory.store_transitions(state, skill, next_state, reward)
+        self.scheduler_memory.store_transitions(state, skill, next_state, reward, done)
         
         return
 
@@ -644,6 +647,9 @@ class Agent(object):
         """
         
         """
+
+        if self.scheduler_memory.memory_counter < self.batch_size:
+            return
 
         states_sample, skill_sample, next_states_sample, rewards_sample, done_samples, batch = self.scheduler_memory.sample_buffer(self.batch_size)
         states_sample = T.tensor(states_sample, dtype=T.float32).to(self.scheduler.device)
