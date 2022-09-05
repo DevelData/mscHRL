@@ -19,7 +19,7 @@ if __name__ == "__main__":
                   skill_dims=4, 
                   learning_rate=10**-4, 
                   memory_size=10**6, 
-                  checkpoint_dir="./checkpoints", 
+                  checkpoint_dir="./checkpoints/", 
                   option_interval=option_interval, 
                   gamma=0.99, 
                   option_gamma=0.99,
@@ -62,9 +62,9 @@ if __name__ == "__main__":
                 states_array[i, :] = observation
                 actions_array[i, :] = action
                 next_states_array[i, :] = next_observation
-                rewards_array[i, :] = reward
-                actor_log_probs_array[i, :] = actor_log_probs.item()
-                done_array[i, :] = done
+                rewards_array[i] = reward
+                actor_log_probs_array[i] = actor_log_probs.item()
+                done_array[i] = done
 
             agent.worker.remember(state_array=states_array, 
                                   action_array=actions_array, 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
             if not load_checkpoint:
                 if agent.scheduler_memory.memory_counter > batch_size:
                     worker_reward = agent.learn()
-                    worker_score = worker_score + worker_reward
+                    worker_score = worker_score + worker_reward.detach().cpu().numpy()
                 else:
                     agent.learn()
 
@@ -96,21 +96,21 @@ if __name__ == "__main__":
         score_history.append(score)
         avg_score = np.mean(score_history[-100:])
 
-        if not load_checkpoint:
-            worker_score_history.append(worker_score)
-            avg_worker_score = np.mean(worker_score_history[-100:])
-            print("Episode = {}, Score = {:.1f}, Average score = {:.2f}, Worker score = {.:1f}, Average worker score = {:.2f}".format(j, score, avg_score, worker_score, avg_worker_score))
-
-        else:
-            print("Episode = {}, Score = {:.1f}, Average score = {:.2f}".format(j, score, avg_score))
-
         if avg_score > best_score:
             best_score = avg_score
             if not load_checkpoint:
                 agent.save_models()
 
+        if not load_checkpoint:
+            worker_score_history.append(worker_score)
+            avg_worker_score = np.mean(worker_score_history[-100:])
+            print("Episode = {}, Score = {:.1f}, Average score = {:.2f}, Worker score = {:.3f}, Average worker score = {:.3f}".format(j, score, avg_score, worker_score, avg_worker_score))
+
+        else:
+            print("Episode = {}, Score = {:.1f}, Average score = {:.2f}".format(j, score, avg_score))
+
     if not load_checkpoint:
-        plot_learning_curve(x=range(1, num_games+1), 
+        plot_learning_curve(num_games=num_games, 
                             scheduler_scores=score_history, 
                             worker_scores=worker_score_history, 
                             plot_dir=plot_dir, 

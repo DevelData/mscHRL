@@ -1,6 +1,5 @@
 import os
 import copy
-from re import X
 from hidio.hidio_scratch.networks import ActorNetwork, CriticNetwork, ValueNetwork
 import numpy as np
 import torch as T
@@ -8,9 +7,11 @@ import torch.nn.functional as F
 import torch.optim as optim
 from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
 from networks import SchedulerNetwork, DiscriminatorNetwork
+from pathlib import Path
 
 
 # Needs entropy modulation term alpha
+# Make checkpoint_dir if it doesn't exist
 class WorkerAgent(object):
     """
     For SAC
@@ -81,7 +82,7 @@ class WorkerAgent(object):
                                           input_dims=self.observation_space_dims + self.skill_dims, 
                                           fc1_size=256, 
                                           fc2_size=256, 
-                                          output_dims=self.num_actions,
+                                          output_dims=self.num_actions * 2,
                                           max_action=env.action_space.high)
         self.critic_network_1 = CriticNetwork(env_name=self.env_name, 
                                               learning_rate=self.learning_rate, 
@@ -135,7 +136,7 @@ class WorkerAgent(object):
         self.update_target_value_network_params(polyak_coeff=1)
 
     
-    def update_target_value_network_params(self, polyak_coeff):
+    def update_target_value_network_params(self, polyak_coeff=None):
         """
         
         """
@@ -221,8 +222,8 @@ class WorkerAgent(object):
         skill: numpy array of dims (m_elems,)
         """
 
-        state = T.tensor(state).reshape(1,-1).to(self.actor_network.device)
-        skill = T.tensor(skill).reshape(1,-1).to(self.actor_network.device)
+        state = T.tensor(state, dtype=T.float32).reshape(1,-1).to(self.actor_network.device)
+        skill = T.tensor(skill, dtype=T.float32).reshape(1,-1).to(self.actor_network.device)
         action, log_probs = self.actor_network.sample_distribution(states_array=state, skills_array=skill, reparameterize=False)
 
         action = action.cpu().detach().numpy().squeeze(axis=0)
@@ -311,7 +312,7 @@ class WorkerAgent(object):
             actions = actions_sample[:, i, :]
             next_states = next_states_sample[:, i, :]
             skills = skills_sample
-            done = done_sample[:, i, :].view(-1)
+            done = done_sample[:, i].view(-1)
 
             # Initializing the value networks
             value_network_value = self.value_network.forward(states).view(-1)
@@ -344,6 +345,7 @@ class WorkerAgent(object):
                                                            state=states, 
                                                            action=actions, 
                                                            next_state=next_states, 
+                                                           next_state_array=next_states_sample,
                                                            action_array=actions_sample, 
                                                            skill=skills)
             discriminator_loss = -1 * discriminator_output
@@ -352,13 +354,13 @@ class WorkerAgent(object):
             self.discriminator.optimizer.step()
 
             # Reward calculation
-            reward = discriminator_output - self.beta * log_probs
+            reward = (discriminator_output + self.beta * log_probs).sum()
             total_reward = total_reward + reward.detach()
 
             # Critic network updates
             self.critic_network_1.optimizer.zero_grad()
             self.critic_network_2.optimizer.zero_grad()
-            q_hat = (self.reward_scale * reward) + (self.gamma * target_value_network_value)
+            q_hat = ((self.reward_scale * reward) + (self.gamma * target_value_network_value)).detach().view(-1)
             q1_old_policy = self.critic_network_1.forward(state_array=states, action_array=actions).view(-1)
             q2_old_policy = self.critic_network_2.forward(state_array=states, action_array=actions).view(-1)
             critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
@@ -409,16 +411,6 @@ class Agent(object):
         self.num_actions = env.action_space.shape[0]
         self.observation_space_dims = env.observation_space.shape[0]
 
-        # Entropy modulating terms
-        self.alpha = alpha
-        self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
-        self.min_entropy_target = min_entropy_target 
-        self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
-        self.log_alpha = T.ones(1, requires_grad=True, device=self.actor_network.device) * self.min_entropy_target
-        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
-        self.w_alpha = w_alpha
-        self.w_auto_entropy_adjustment = w_auto_entropy_adjustment
-
         self.skill_dims = skill_dims
         self.learning_rate = learning_rate
         self.memory_size = memory_size
@@ -432,6 +424,10 @@ class Agent(object):
         self.beta = beta
         self.use_tanh = use_tanh
         self.feature = feature
+
+        # Entropy modulating terms for worker
+        self.w_alpha = w_alpha
+        self.w_auto_entropy_adjustment = w_auto_entropy_adjustment
 
         # Networks
         self.worker = WorkerAgent(env=env, 
@@ -456,7 +452,7 @@ class Agent(object):
                                           input_dims=self.observation_space_dims, 
                                           fc1_size=256, 
                                           fc2_size=256, 
-                                          output_dims=self.skill_dims, 
+                                          output_dims=self.skill_dims * 2, 
                                           option_interval=self.option_interval, 
                                           gamma=self.gamma)
         self.scheduler_memory = SchedulerBuffer(memory_size=self.memory_size, 
@@ -494,6 +490,18 @@ class Agent(object):
                                               fc1_size=256, 
                                               fc2_size=256, 
                                               output_dims=1)
+
+        # Create the directories for saving model parameters, if they don't exist
+        Path(self.scheduler.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+        
+        # Entropy modulating terms
+        self.alpha = alpha
+        self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
+        self.min_entropy_target = min_entropy_target 
+        self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
+        self.log_alpha = T.tensor(self.min_entropy_target, dtype=T.float32, requires_grad=True, device=self.scheduler.device)
+        #T.ones(1, requires_grad=True, device=self.scheduler.device) * self.min_entropy_target
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
         
         # Array for discounting in the loss function
         self.option_interval_discount = np.full(self.option_interval, self.option_gamma)
@@ -503,7 +511,7 @@ class Agent(object):
         self.update_target_value_network_params(polyak_coeff=1)
 
 
-    def update_target_value_network_params(self, polyak_coeff):
+    def update_target_value_network_params(self, polyak_coeff=None):
         """
         
         """
@@ -542,7 +550,7 @@ class Agent(object):
         state: numpy array of (n_elems,)
         """
 
-        state = T.tensor(state).reshape(1, -1).to(self.scheduler.device)
+        state = T.tensor(state, dtype=T.float32).reshape(1, -1).to(self.scheduler.device)
         skill, _ = self.scheduler.sample_skill(state=state, reparameterize=False)
 
         return skill.cpu().detach().numpy().squeeze(axis=0)
@@ -682,9 +690,9 @@ class Agent(object):
         # Updating the critic networks
         self.critic_network_1.optimizer.zero_grad()
         self.critic_network_2.optimizer.zero_grad()
-        q_hat = (self.reward_scale * rewards_sample) + (self.gamma * target_value_network_value)
-        q1_old_policy = self.critic_network_1.forward(state_array=states_sample, action_array=skill_sample)
-        q2_old_policy = self.critic_network_2.forward(state_array=states_sample, action_array=skill_sample)
+        q_hat = ((self.reward_scale * rewards_sample) + (self.gamma * target_value_network_value)).view(-1)
+        q1_old_policy = self.critic_network_1.forward(state_array=states_sample, action_array=skill_sample).view(-1)
+        q2_old_policy = self.critic_network_2.forward(state_array=states_sample, action_array=skill_sample).view(-1)
         critic_1_loss = 0.5 * F.mse_loss(q1_old_policy, q_hat)
         critic_2_loss = 0.5 * F.mse_loss(q2_old_policy, q_hat)
         critic_loss = critic_1_loss + critic_2_loss

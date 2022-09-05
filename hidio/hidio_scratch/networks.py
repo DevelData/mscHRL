@@ -86,8 +86,7 @@ class SchedulerNetwork(GeneralNetwork):
                  fc2_size, 
                  output_dims,
                  option_interval, 
-                 gamma, 
-                 option_gamma):
+                 gamma):
 
         super(SchedulerNetwork, self).__init__(env_name, 
                                                learning_rate, 
@@ -115,7 +114,7 @@ class SchedulerNetwork(GeneralNetwork):
         # Don't forget to send the state to the Tensor device in other methods
         #state = T.tensor(state).to(self.device)
         processed_state = F.relu(self.fc1(state))
-        processed_state = F.relu(self.fc2(state))
+        processed_state = F.relu(self.fc2(processed_state))
         
         # Trying this instead of separate layers 
         mu_sigma = self.output(processed_state)
@@ -162,7 +161,7 @@ class SchedulerNetwork(GeneralNetwork):
         log_probability = log_probability.sum(1, keepdim=True)
 
         return skills, log_probability
-                
+
     
     # Check this out - FOCUS!!!
     def objective_rewards(self, log_prob, reward_array, batch_idx, horizon_discount=False):
@@ -204,8 +203,7 @@ class DiscriminatorNetwork(GeneralNetwork):
                  fc2_size, 
                  output_dims):
         
-        super(DiscriminatorNetwork, self).__init__(self, 
-                                                   env_name,
+        super(DiscriminatorNetwork, self).__init__(env_name,
                                                    learning_rate, 
                                                    name, 
                                                    checkpoint_dir, 
@@ -345,7 +343,7 @@ class ValueNetwork(GeneralNetwork):
         """
 
         state_value = F.relu(self.fc1(state))
-        state_value = F.relu(self.fc2(state))
+        state_value = F.relu(self.fc2(state_value))
         value = self.output(state_value)
 
         return value
