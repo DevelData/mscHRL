@@ -288,7 +288,7 @@ class WorkerAgent(object):
         pass
 
 
-    def learn(self):
+    def learn(self, external_batch=None):
         """
         
         """
@@ -299,7 +299,7 @@ class WorkerAgent(object):
 
         total_reward = 0
 
-        states_sample, actions_sample, next_states_sample, skills_sample, done_sample = self.memory.sample_buffer(self.batch_size)
+        states_sample, actions_sample, next_states_sample, skills_sample, done_sample = self.memory.sample_buffer(batch_size=self.batch_size, external_batch=external_batch)
         states_sample = T.tensor(states_sample, dtype=T.float32).to(self.actor_network.device)
         actions_sample = T.tensor(actions_sample, dtype=T.float32).to(self.actor_network.device)
         next_states_sample = T.tensor(next_states_sample, dtype=T.float32).to(self.actor_network.device)
@@ -701,7 +701,7 @@ class Agent(object):
         self.critic_network_2.optimizer.step()
 
         # Updating networks in agent - discriminator and worker
-        worker_reward = self.worker.learn()
+        worker_reward = self.worker.learn(external_batch=batch)
 
         # Update target_value_network
         self.update_target_value_network_params()

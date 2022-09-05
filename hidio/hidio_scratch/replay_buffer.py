@@ -124,13 +124,16 @@ class WorkerReplayBuffer(object):
         return
 
     
-    def sample_buffer(self, batch_size):
+    def sample_buffer(self, batch_size, external_batch=None):
         """
         
         """
         
-        max_current_memory = min(self.memory_counter, self.memory_size)
-        batch = np.random.choice(max_current_memory, size=batch_size)
+        if external_batch is not None:
+            batch = external_batch
+        else:
+            max_current_memory = min(self.memory_counter, self.memory_size)
+            batch = np.random.choice(max_current_memory, size=batch_size)
 
         states_sample = self.state_memory[batch]
         actions_sample = self.action_memory[batch]
