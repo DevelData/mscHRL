@@ -1,12 +1,11 @@
 import os
 import copy
-from hidio.hidio_scratch.networks import ActorNetwork, CriticNetwork, ValueNetwork
+from networks import ActorNetwork, CriticNetwork, ValueNetwork, SchedulerNetwork, DiscriminatorNetwork
 import numpy as np
 import torch as T
 import torch.nn.functional as F
 import torch.optim as optim
 from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
-from networks import SchedulerNetwork, DiscriminatorNetwork
 from pathlib import Path
 
 

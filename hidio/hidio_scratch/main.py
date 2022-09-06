@@ -3,6 +3,7 @@ import copy
 import numpy as np
 from agents import WorkerAgent, Agent
 import gym
+import pybullet_envs
 import argparse # Would like to use later
 from utils import plot_learning_curve
 
