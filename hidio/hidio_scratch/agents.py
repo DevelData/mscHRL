@@ -614,7 +614,7 @@ class Agent(object):
         return critic_value, log_probs
 
 
-    def post_interval_reward(self, actor_log_probs, reward_array, expected_value=True):
+    def post_interval_reward(self, actor_log_probs, reward_array, expected_log_probs=True):
         """
         Calculates the reward for the scheduler after the option interval (K).
         
@@ -626,13 +626,14 @@ class Agent(object):
             Size: 1 x option_interval
         """
 
-        if expected_value:
-            rewards = reward_array * self.option_interval_discount
+        rewards = reward_array * self.option_interval_discount
+
+        if expected_log_probs:
             final_reward = actor_log_probs * rewards
             return final_reward.mean().item()
 
         else:
-            return reward_array.sum().item()
+            return rewards.mean().item()
 
     
     def generate_empty_arrays(self):

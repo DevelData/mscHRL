@@ -75,7 +75,7 @@ if __name__ == "__main__":
                                   done_array=done_array)
             scheduler_reward = agent.post_interval_reward(actor_log_probs=actor_log_probs_array, 
                                                           reward_array=rewards_array, 
-                                                          expected_value=True)
+                                                          expected_log_probs=True)
             agent.remember(state=observation, 
                            skill=skill, 
                            next_state=next_observation, 

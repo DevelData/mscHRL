@@ -25,7 +25,7 @@ class GeneralNetwork(nn.Module):
         super(GeneralNetwork, self).__init__()
         self.env_name = env_name
         self.learning_rate = learning_rate
-        self.name = name
+        self.network_name = name
         self.checkpoint_dir = checkpoint_dir + self.env_name
         self.input_dims = input_dims
         self.fc1_size = fc1_size
@@ -33,7 +33,7 @@ class GeneralNetwork(nn.Module):
         self.output_dims = output_dims
 
         # File in which to save the parameters
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, self.name)
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, self.network_name)
 
         # NN architecture
         self.fc1 = nn.Linear(in_features=input_dims, 
