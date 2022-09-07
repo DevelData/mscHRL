@@ -55,12 +55,19 @@ class GeneralNetwork(nn.Module):
         return
 
     
-    def load_checkpoint(self, custom_state_dict=None):
+    def load_checkpoint(self, custom_state_dict=None, load_path=None):
         """
         """
 
         if custom_state_dict is not None:
             self.load_state_dict(T.load(custom_state_dict))
+
+        elif load_path is not None:
+            self.load_state_dict(T.load(load_path + self.network_name))
+
+        elif (custom_state_dict is not None) and (load_path is not None):
+            raise ValueError("custom_state_dict and load_path cannot both be not None.")
+            
         else:
             self.load_state_dict(T.load(self.checkpoint_file))
 
