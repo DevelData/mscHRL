@@ -5,13 +5,13 @@ from agents.hidio_agent import Agent
 import matplotlib.pyplot as plt
 from pathlib import Path
 import json
-import datetime
+from datetime import datetime
 
 
 
 if __name__ == "__main__":
     env = gym.make("----------")
-    checkpoint_dir = "../network_checkpoints/hidio/" + env.spec.id + "/"
+    checkpoint_dir = "../network_checkpoints/hidio/"
     option_interval = 3
     batch_size = 512
     num_games = 500
@@ -21,7 +21,8 @@ if __name__ == "__main__":
     load_checkpoint = False
     transfer_network_params = False
     transfer_network_path = "./"
-    performance_info_path = checkpoint_dir + "model_info/"
+    env_name = env.spec.id
+    performance_info_path = checkpoint_dir + "/" + env_name + "/model_info/"
 
 
     agent = Agent(env=env, 
@@ -103,7 +104,7 @@ if __name__ == "__main__":
             
             
         score_history.append(score)
-        avg_score = np.mean(score_history[-100:])
+        avg_score = np.mean(score_history[-20:])
 
         if avg_score > best_score:
             best_score = avg_score
