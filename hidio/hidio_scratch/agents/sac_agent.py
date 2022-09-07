@@ -10,7 +10,7 @@ from replay_buffers.sac_buffer import ReplayBuffer
 
 
 
-class WorkerAgent(object):
+class Agent(object):
     """
     For SAC
     """
@@ -26,6 +26,7 @@ class WorkerAgent(object):
                  alpha,
                  use_auto_entropy_adjustment,
                  min_target_entropy,
+                 transfer_network,
                  learning_rate=10**-4):
 
         self.max_memory_size = max_memory_size
@@ -35,6 +36,7 @@ class WorkerAgent(object):
         self.checkpoint_dir = checkpoint_dir
         self.gamma = gamma
         self.learning_rate = learning_rate
+        self.transfer_network = transfer_network
 
         # Environment variables
         self.env_name = env.spec.id
@@ -215,12 +217,18 @@ class WorkerAgent(object):
         return critic_value, log_probs
 
 
-    def transfer_network_params(self, source_network, target_network):
+    def transfer_network_params(self, custom_state_dict=None, load_path=None):
         """
         Transfers network parameters from source_network to the target_network.
         """
 
-        pass
+        self.actor_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_1.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_2.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.target_value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+
+        return
 
 
     def learn(self):
