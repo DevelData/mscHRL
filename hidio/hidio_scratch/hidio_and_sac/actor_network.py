@@ -1,6 +1,4 @@
-# networks/actor_network.py
-
-from networks.general_network import GeneralNetwork
+from general_network import GeneralNetwork
 import torch as T
 import torch.nn.functional as F
 import torch.nn as nn

@@ -1,4 +1,3 @@
-# networks/general_network.py
 import os
 import torch as T
 import torch.nn as nn

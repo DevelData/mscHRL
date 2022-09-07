@@ -1,4 +1,3 @@
-# networks/scheduler.py
 from networks.general_network import GeneralNetwork
 import torch as T
 import torch.nn.functional as F

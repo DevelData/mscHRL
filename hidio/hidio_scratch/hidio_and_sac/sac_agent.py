@@ -1,8 +1,3 @@
-# agents/sac_agent.py
-
-import sys
-sys.path.append('../')
-
 from pathlib import Path
 import torch as T
 import torch.nn.functional as F
