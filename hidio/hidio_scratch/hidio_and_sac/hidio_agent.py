@@ -5,12 +5,12 @@ import torch as T
 import torch.nn.functional as F
 import torch.optim as optim
 
-from networks.actor_network import ActorNetwork
-from networks.critic_network import CriticNetwork
-from networks.value_network import ValueNetwork
-from networks.scheduler import SchedulerNetwork
-from networks.discriminator import DiscriminatorNetwork
-from replay_buffers.hidio_buffer import SchedulerBuffer, WorkerReplayBuffer
+from actor_network import ActorNetwork
+from critic_network import CriticNetwork
+from value_network import ValueNetwork
+from scheduler import SchedulerNetwork
+from discriminator import DiscriminatorNetwork
+from hidio_buffer import SchedulerBuffer, WorkerReplayBuffer
 
 
 
