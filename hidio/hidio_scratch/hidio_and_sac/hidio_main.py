@@ -1,7 +1,7 @@
 import gym
 import pybullet_envs
 import numpy as np
-from agents.hidio_agent import Agent
+from hidio_agent import Agent
 import matplotlib.pyplot as plt
 from pathlib import Path
 import json

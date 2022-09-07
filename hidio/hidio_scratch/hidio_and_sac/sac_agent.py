@@ -3,10 +3,10 @@ import torch as T
 import torch.nn.functional as F
 import torch.optim as optim
 
-from networks.actor_network import ActorNetwork
-from networks.critic_network import CriticNetwork
-from networks.value_network import ValueNetwork
-from replay_buffers.sac_buffer import ReplayBuffer
+from actor_network import ActorNetwork
+from critic_network import CriticNetwork
+from value_network import ValueNetwork
+from sac_buffer import ReplayBuffer
 
 
 
