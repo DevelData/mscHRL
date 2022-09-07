@@ -434,6 +434,9 @@ class Agent(object):
         self.use_tanh = use_tanh
         self.feature = feature
 
+        # Create the directories for saving model parameters, if they don't exist
+        Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+
         # Entropy modulating terms for worker
         self.w_alpha = w_alpha
         self.w_auto_entropy_adjustment = w_auto_entropy_adjustment
@@ -499,9 +502,6 @@ class Agent(object):
                                               fc1_size=256, 
                                               fc2_size=256, 
                                               output_dims=1)
-
-        # Create the directories for saving model parameters, if they don't exist
-        Path(self.scheduler.checkpoint_dir).mkdir(parents=True, exist_ok=True)
         
         # Entropy modulating terms
         self.alpha = alpha
@@ -583,7 +583,7 @@ class Agent(object):
         
         """
 
-        print("************--Saving scheduler and discriminator--************")
+        print("************--Saving scheduler--************")
         self.scheduler.save_checkpoint()
         self.value_network.save_checkpoint()
         self.target_value_network.save_checkpoint()
@@ -599,7 +599,7 @@ class Agent(object):
 
         """
 
-        print("************--Loading scheduler and discriminator--************")
+        print("************--Loading scheduler--************")
         self.scheduler.load_checkpoint()
         self.value_network.load_checkpoint()
         self.target_value_network.load_checkpoint()

@@ -50,7 +50,7 @@ class GeneralNetwork(nn.Module):
         """
         """
 
-        T.save(self.state_dict, self.checkpoint_file)
+        T.save(self.state_dict(), self.checkpoint_file)
 
         return
 

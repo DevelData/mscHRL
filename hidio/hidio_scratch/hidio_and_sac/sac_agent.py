@@ -42,6 +42,8 @@ class Agent(object):
         self.observation_space_dims = env.observation_space.shape[0]
         self.max_action = env.action_space.high
 
+        # Create the directories for saving model parameters, if they don't exist
+        Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
         # Networks
         self.memory = ReplayBuffer(memory_size=self.max_memory_size, 
@@ -88,9 +90,6 @@ class Agent(object):
                                                  fc1_size=256, 
                                                  fc2_size=256, 
                                                  output_dims=1)
-        
-        # Create the directories for saving model parameters, if they don't exist
-        Path(self.actor_network.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
         # Entropy adjustment factor (alpha)
         self.alpha = alpha

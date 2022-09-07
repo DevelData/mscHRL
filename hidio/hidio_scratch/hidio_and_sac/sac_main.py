@@ -15,7 +15,7 @@ if __name__ == "__main__":
     num_games = 50
     best_score = env.reward_range[0]
     score_history = []
-    load_checkpoint = True
+    load_checkpoint = False
     transfer_network_params = False
     transfer_network_path = "./"
     env_name = env.spec.id
