@@ -363,7 +363,7 @@ class WorkerAgent(object):
             self.discriminator.optimizer.step()
 
             # Reward calculation
-            reward = (discriminator_output + self.beta * log_probs).sum()
+            reward = -1 * (discriminator_output + self.beta * log_probs).sum()
             total_reward = total_reward + reward.detach()
 
             # Critic network updates

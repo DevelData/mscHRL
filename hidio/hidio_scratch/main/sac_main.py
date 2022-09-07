@@ -8,9 +8,18 @@ import json
 import datetime
 
 
+
 if __name__ == "__main__":
     env = gym.make("----------")
-    checkpoint_dir = "../checkpoints/sac/" + env.spec.id + "/"
+    checkpoint_dir = "../network_checkpoints/sac/" + env.spec.id + "/"
+    num_games = 500
+    best_score = env.reward_range[0]
+    score_history = []
+    load_checkpoint = False
+    transfer_network_params = False
+    transfer_network_path = "./"
+    performance_info_path = checkpoint_dir + "model_info/"
+    
     agent = Agent(env=env, 
                   max_memory_size=10**6, 
                   reward_scale=2, 
@@ -22,13 +31,6 @@ if __name__ == "__main__":
                   use_auto_entropy_adjustment=True, 
                   min_target_entropy=0.005,
                   learning_rate=3*10**-4)
-    num_games = 500
-    best_score = env.reward_range[0]
-    score_history = []
-    load_checkpoint = False
-    transfer_network_params = False
-    transfer_network_path = "./"
-    performance_info_path = checkpoint_dir + "model_info/"
 
     # Create performance_info_path if it doesn't exist
     Path(performance_info_path).mkdir(parents=True, exist_ok=True)
@@ -77,12 +79,13 @@ if __name__ == "__main__":
         time_info = datetime.now().strftime("%Y_%m_%d_%H%M")
 
         # Score history plot
-        plt.title("Score history for SAC in {}".format(env.sped.id))
+        plt.title("Score history for SAC in {}".format(env.spec.id))
         plt.plot(range(1, len(score_history) + 1), np.array(score_history), label="Score")
         plt.legend(loc="upper left")
         plt.savefig(performance_info_path + "score_history_{}.png".format(time_info))
 
         # Score history JSON file
-        model_performance_info = {"score_history": score_history}
+        model_performance_info = {"score_history": score_history, 
+                                  "num_sampled": agent.memory.memory_counter}
         with open(performance_info_path + "score_history_{}.json".format(time_info), mode="w") as score_history_json_file:
             json.dump(model_performance_info, score_history_json_file)
