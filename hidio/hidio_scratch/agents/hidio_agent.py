@@ -736,4 +736,3 @@ class Agent(object):
         self.adjust_alpha(log_prob=log_probs)
 
         return worker_reward
-
