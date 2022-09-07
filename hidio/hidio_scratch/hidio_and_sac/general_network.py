@@ -31,7 +31,7 @@ class GeneralNetwork(nn.Module):
         self.output_dims = output_dims
 
         # File in which to save the parameters
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, self.network_name)
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, self.network_name + ".pth")
 
         # NN architecture
         self.fc1 = nn.Linear(in_features=input_dims, 

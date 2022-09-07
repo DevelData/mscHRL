@@ -14,12 +14,12 @@ from datetime import datetime
 
 
 if __name__ == "__main__":
-    env = gym.make("----------")
+    env = gym.make("InvertedPendulumBulletEnv-v0")
     checkpoint_dir = "../network_checkpoints/sac/"
-    num_games = 500
+    num_games = 50
     best_score = env.reward_range[0]
     score_history = []
-    load_checkpoint = False
+    load_checkpoint = True
     transfer_network_params = False
     transfer_network_path = "./"
     env_name = env.spec.id

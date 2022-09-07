@@ -18,11 +18,11 @@ if __name__ == "__main__":
     checkpoint_dir = "../network_checkpoints/hidio/"
     option_interval = 3
     batch_size = 512
-    num_games = 500
+    num_games = 25
     best_score = env.reward_range[0]
     score_history = []
     worker_score_history = []
-    load_checkpoint = True
+    load_checkpoint = False
     transfer_network_params = False
     transfer_network_path = "./"
     env_name = env.spec.id
