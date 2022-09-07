@@ -20,8 +20,7 @@ if __name__ == "__main__":
                   gamma=0.99, 
                   alpha=0.25, 
                   use_auto_entropy_adjustment=True, 
-                  min_target_entropy=0.005, 
-                  transfer_network=False,
+                  min_target_entropy=0.005,
                   learning_rate=3*10**-4)
     num_games = 500
     best_score = env.reward_range[0]

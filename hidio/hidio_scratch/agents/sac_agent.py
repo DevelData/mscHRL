@@ -26,7 +26,6 @@ class Agent(object):
                  alpha,
                  use_auto_entropy_adjustment,
                  min_target_entropy,
-                 transfer_network,
                  learning_rate=10**-4):
 
         self.max_memory_size = max_memory_size
@@ -36,7 +35,6 @@ class Agent(object):
         self.checkpoint_dir = checkpoint_dir
         self.gamma = gamma
         self.learning_rate = learning_rate
-        self.transfer_network = transfer_network
 
         # Environment variables
         self.env_name = env.spec.id
