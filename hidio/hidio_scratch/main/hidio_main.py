@@ -1,3 +1,7 @@
+# main/hidio_main.py
+import sys
+sys.path.append("../")
+
 import gym
 import pybullet_envs
 import numpy as np
@@ -10,7 +14,7 @@ from datetime import datetime
 
 
 if __name__ == "__main__":
-    env = gym.make("----------")
+    env = gym.make("InvertedPendulumBulletEnv-v0")
     checkpoint_dir = "../network_checkpoints/hidio/"
     option_interval = 3
     batch_size = 512
@@ -18,7 +22,7 @@ if __name__ == "__main__":
     best_score = env.reward_range[0]
     score_history = []
     worker_score_history = []
-    load_checkpoint = False
+    load_checkpoint = True
     transfer_network_params = False
     transfer_network_path = "./"
     env_name = env.spec.id

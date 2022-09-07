@@ -1,3 +1,7 @@
+# main/sac_main.py
+import sys
+sys.path.append("../")
+
 import gym
 import pybullet_envs
 import numpy as np

@@ -1,3 +1,8 @@
+# agents/hidio_agent.py
+
+import sys
+sys.path.append('../')
+
 import copy
 from pathlib import Path
 import numpy as np

@@ -1,8 +1,10 @@
-from general_network import GeneralNetwork
+# networks/discriminator.py
+from networks.general_network import GeneralNetwork
 import os
 import torch as T
 import torch.nn.functional as F
 import torch.nn as nn
+
 
 
 
