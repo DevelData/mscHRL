@@ -1,15 +1,19 @@
 import copy
-from networks import ActorNetwork, CriticNetwork, ValueNetwork, SchedulerNetwork, DiscriminatorNetwork
+from pathlib import Path
 import numpy as np
 import torch as T
 import torch.nn.functional as F
 import torch.optim as optim
-from replay_buffer import SchedulerBuffer, WorkerReplayBuffer
-from pathlib import Path
+
+from networks.actor_network import ActorNetwork
+from networks.critic_network import CriticNetwork
+from networks.value_network import ValueNetwork
+from networks.scheduler import SchedulerNetwork
+from networks.discriminator import DiscriminatorNetwork
+from replay_buffers.hidio_buffer import SchedulerBuffer, WorkerReplayBuffer
 
 
-# Needs entropy modulation term alpha
-# Make checkpoint_dir if it doesn't exist
+
 class WorkerAgent(object):
     """
     For SAC
@@ -131,7 +135,7 @@ class WorkerAgent(object):
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
 
         # Align parameters of value_network and target_value_network
-        self.update_target_value_network_params(polyak_coeff=1)
+        self.update_target_value_network_params(polyak_coeff=0)
 
     
     def update_target_value_network_params(self, polyak_coeff=None):
@@ -506,7 +510,7 @@ class Agent(object):
         self.option_interval_discount = np.power(self.option_interval_discount, [i for i in range(self.option_interval)])
         
         # Align parameters of value_network and target_value_network
-        self.update_target_value_network_params(polyak_coeff=1)
+        self.update_target_value_network_params(polyak_coeff=0)
 
 
     def update_target_value_network_params(self, polyak_coeff=None):
