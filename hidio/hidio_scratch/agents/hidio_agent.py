@@ -282,12 +282,19 @@ class WorkerAgent(object):
         return critic_value, log_probs
 
 
-    def transfer_network_params(self, source_network, target_network):
+    def transfer_network_params(self, custom_state_dict=None, load_path=None):
         """
         Transfers network parameters from source_network to the target_network.
         """
 
-        pass
+        print("############--Transferring model parameters--############")
+        self.actor_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_1.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_2.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.target_value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+
+        return
 
 
     def learn(self, external_batch=None):
@@ -599,6 +606,22 @@ class Agent(object):
         self.critic_network_1.load_checkpoint()
         self.critic_network_2.load_checkpoint()
         self.worker.load_models()
+
+        return
+
+
+    def transfer_network_params(self, custom_state_dict=None, load_path=None):
+        """
+        
+        """
+
+        print("************--Transferring model parameters--************")
+        self.scheduler.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.target_value_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_1.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.critic_network_2.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
+        self.worker.transfer_network_params(custom_state_dict=custom_state_dict, load_path=load_path)
 
         return
 

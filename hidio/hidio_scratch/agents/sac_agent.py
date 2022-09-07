@@ -222,6 +222,7 @@ class Agent(object):
         Transfers network parameters from source_network to the target_network.
         """
 
+        print("############--Transferring model parameters--############")
         self.actor_network.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
         self.critic_network_1.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
         self.critic_network_2.load_checkpoint(custom_state_dict=custom_state_dict, load_path=load_path)
