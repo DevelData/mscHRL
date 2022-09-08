@@ -408,8 +408,7 @@ class Agent(object):
                  polyak_coeff, 
                  beta, 
                  alpha, 
-                 use_auto_entropy_adjustment, 
-                 min_entropy_target, 
+                 use_auto_entropy_adjustment,
                  w_alpha, 
                  w_auto_entropy_adjustment, 
                  use_tanh, 
@@ -506,10 +505,8 @@ class Agent(object):
         # Entropy modulating terms
         self.alpha = alpha
         self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
-        self.min_entropy_target = min_entropy_target 
         self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
-        self.log_alpha = T.tensor(self.min_entropy_target, dtype=T.float32, requires_grad=True, device=self.scheduler.device)
-        #T.ones(1, requires_grad=True, device=self.scheduler.device) * self.min_entropy_target
+        self.log_alpha = T.zeros(1, requires_grad=True, device=self.scheduler.device)
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
         
         # Array for discounting in the loss function

@@ -25,7 +25,6 @@ class Agent(object):
                  gamma,
                  alpha,
                  use_auto_entropy_adjustment,
-                 min_target_entropy,
                  learning_rate=10**-4):
 
         self.max_memory_size = max_memory_size
@@ -94,9 +93,8 @@ class Agent(object):
         # Entropy adjustment factor (alpha)
         self.alpha = alpha
         self.use_auto_entropy_adjustment = use_auto_entropy_adjustment
-        self.min_target_entropy = min_target_entropy
         self.target_entropy = -T.prod(T.Tensor([env.action_space.high - env.action_space.low])).item()
-        self.log_alpha = T.tensor(self.min_target_entropy, dtype=T.float32, requires_grad=True, device=self.actor_network.device)
+        self.log_alpha = T.zeros(1, requires_grad=True, device=self.actor_network.device)
         #T.zeros(1, requires_grad=True, device=self.actor_network.device)
         self.alpha_optimizer = optim.Adam([self.log_alpha], lr=self.learning_rate)
 
