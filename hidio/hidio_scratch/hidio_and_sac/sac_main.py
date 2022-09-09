@@ -12,7 +12,7 @@ from datetime import datetime
 if __name__ == "__main__":
     env = gym.make("InvertedPendulumBulletEnv-v0")
     checkpoint_dir = "../network_checkpoints/sac/"
-    num_games = 50
+    num_games = 500
     best_score = env.reward_range[0]
     score_history = []
     load_checkpoint = False
