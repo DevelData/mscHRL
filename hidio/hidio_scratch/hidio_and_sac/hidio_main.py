@@ -8,13 +8,18 @@ import json
 from datetime import datetime
 
 
-
 if __name__ == "__main__":
-    env = gym.make("InvertedPendulumBulletEnv-v0")
+    env = gym.make("HalfCheetahBulletEnv-v0")
+    #gym.make("HalfCheetahBulletEnv-v0")
+    #gym.make("BipedalWalker-v3")
+    #gym.make("HumanoidBulletEnv-v0")
+    #gym.make("HopperBulletEnv-v0")
+    #gym.make("InvertedPendulumBulletEnv-v0")
     checkpoint_dir = "../network_checkpoints/hidio/"
     option_interval = 3
-    batch_size = 512
-    num_games = 25
+    batch_size = 500
+    num_games = 500
+    #550
     best_score = env.reward_range[0]
     score_history = []
     worker_score_history = []
@@ -26,8 +31,8 @@ if __name__ == "__main__":
 
 
     agent = Agent(env=env, 
-                  skill_dims=3, 
-                  learning_rate=10**-4, 
+                  skill_dims=5, 
+                  learning_rate=3*10**-4, 
                   memory_size=10**6, 
                   checkpoint_dir=checkpoint_dir, 
                   option_interval=option_interval, 
@@ -37,10 +42,10 @@ if __name__ == "__main__":
                   batch_size=batch_size, 
                   polyak_coeff=0.995, 
                   beta=0.01, 
-                  alpha=0.3, 
+                  alpha=0.35, 
                   use_auto_entropy_adjustment=True,
-                  w_alpha=0.25, 
-                  w_auto_entropy_adjustment=True, 
+                  w_alpha=0.2, 
+                  w_auto_entropy_adjustment=False, 
                   use_tanh=True, 
                   feature="stateAction")
 
@@ -49,7 +54,7 @@ if __name__ == "__main__":
     
     if load_checkpoint:
         agent.load_models()
-        env.render(mode="human")
+        #env.render(mode="human")
 
     if transfer_network_params:
         agent.transfer_network_params(load_path=transfer_network_path)
@@ -117,6 +122,8 @@ if __name__ == "__main__":
 
         else:
             print("Episode = {}, Score = {:.1f}, Average score = {:.2f}".format(j, score, avg_score))
+            
+        print(agent.alpha)
 
     if not load_checkpoint:
         time_info = datetime.now().strftime("%Y_%m_%d_%H%M")

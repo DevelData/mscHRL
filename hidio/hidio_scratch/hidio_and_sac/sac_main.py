@@ -10,9 +10,14 @@ from datetime import datetime
 
 
 if __name__ == "__main__":
-    env = gym.make("InvertedPendulumBulletEnv-v0")
+    env = gym.make("InvertedDoublePendulumBulletEnv-v0")
+    #gym.make("InvertedDoublePendulumBulletEnv-v0")
+    #gym.make("BipedalWalker-v3")
+    #gym.make("HumanoidBulletEnv-v0")
+    #gym.make("HopperBulletEnv-v0")
+    #gym.make("InvertedPendulumBulletEnv-v0")
     checkpoint_dir = "../network_checkpoints/sac/"
-    num_games = 500
+    num_games = 300
     best_score = env.reward_range[0]
     score_history = []
     load_checkpoint = False
@@ -24,13 +29,12 @@ if __name__ == "__main__":
     agent = Agent(env=env, 
                   max_memory_size=10**6, 
                   reward_scale=2, 
-                  batch_size=512, 
+                  batch_size=500, 
                   polyak_coeff=0.995, 
                   checkpoint_dir=checkpoint_dir, 
                   gamma=0.99, 
-                  alpha=0.25, 
+                  alpha=0.35, 
                   use_auto_entropy_adjustment=True, 
-                  min_target_entropy=0.005,
                   learning_rate=3*10**-4)
 
     # Create performance_info_path if it doesn't exist
@@ -38,7 +42,7 @@ if __name__ == "__main__":
 
     if load_checkpoint:
         agent.load_models()
-        env.render(mode="human")
+        #env.render(mode="human")
 
     if transfer_network_params:
         agent.transfer_network_params(load_path=transfer_network_path)
@@ -74,6 +78,7 @@ if __name__ == "__main__":
                 agent.save_models()
 
         print("Episode = {}, Score = {:.1f}, Average Score = {:.2f}".format(i, score, avg_score))
+        print(agent.alpha)
     
     
     if not load_checkpoint:
