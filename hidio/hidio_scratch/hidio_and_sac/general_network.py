@@ -63,7 +63,7 @@ class GeneralNetwork(nn.Module):
             self.load_state_dict(T.load(custom_state_dict))
 
         elif load_path is not None:
-            self.load_state_dict(T.load(load_path + self.network_name))
+            self.load_state_dict(T.load(load_path + self.network_name + ".pth"))
 
         elif (custom_state_dict is not None) and (load_path is not None):
             raise ValueError("custom_state_dict and load_path cannot both be not None.")
