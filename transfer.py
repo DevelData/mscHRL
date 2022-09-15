@@ -15,6 +15,8 @@ def transfer_hidden_weights(source_dir,
     source_dir = source_dir
     source_nets = os.listdir(source_dir)
     source_nets = [net for net in source_nets if net.endswith(".pth")]
+    
+    device = "cuda:0" if T.cuda.is_available() else "cpu"
 
     for net in source_nets:
         print(net)
@@ -22,7 +24,16 @@ def transfer_hidden_weights(source_dir,
         source_net = T.load(source_dir + net)
 
         for param in params:
-            transfer_net[param] = source_net[param].clone()
+            print(transfer_net[param].shape, param)
+            print("-------------------")
+            if (len(transfer_net[param].shape) > 1) and (transfer_net[param].shape[1] > source_net[param].shape[1]):
+                transfer_net[param] = T.cat([source_net[param].clone().to(device), T.rand(transfer_net[param].shape[0], transfer_net[param].shape[1] - source_net[param].shape[1]).to(device)], axis=1)
+                
+            elif (len(transfer_net[param].shape) > 1) and (transfer_net[param].shape[1] < source_net[param].shape[1]):
+                transfer_net[param] = source_net[param][:, :transfer_net[param].shape[1]].clone()            
+            
+            else:
+                transfer_net[param] = source_net[param].clone()
 
         T.save(transfer_net, save_dir + net)
     
