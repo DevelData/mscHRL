@@ -1,5 +1,5 @@
 # mscHRL
-Hierarchical Reinforcement Learning using Hierarchical Proximal Policy Optimization (HiPPO) for MSc summer project
+Hierarchical Reinforcement Learning using SAC and HIDIO for MSc project.
 
 
 Plan:
