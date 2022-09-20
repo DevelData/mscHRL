@@ -8,4 +8,4 @@ How to run the code (best results will be on Linux OS with pip and conda install
 3. cd ../hidio/hidio_scratch/hidio_and_sac/
 4. Edit the main files 'sac_main.py' or 'hidio_main.py' to change hyperparameters and/or environments
 5. python [name of file]
-6. If you want to transfer network parameters, use the transfer.py file in the terminal. The non-default arguments in this file can be configured from the terminal.
+6. If you want to transfer network parameters, use the transfer.py file. The non-default arguments in this file can be configured from the terminal.
